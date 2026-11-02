@@ -5,7 +5,7 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var SOLO_W = 900, PW = 428, PH = 800, CAP = 22;
+  var SOLO_W = 900, PW = 428, PH = 800, CAP = 22, PLAY_H = 50;
 
   /* 观看顺序：看完演示才解锁方案、过程和 Scope */
   var LOCK_KEY = 'campus-errand-unlocked';
@@ -73,7 +73,11 @@
     var st = STEPS[S.step], sends = [];
     for (var i = 0; i <= S.beat; i++) if (st.beats[i].send) sends.push(st.beats[i].send);
     if (CHAT.manual) return;
-    while (CHAT.done < sends.length) chatSend(sends[CHAT.done++]);
+    while (CHAT.done < sends.length) {
+      var who = sends[CHAT.done++];
+      /* 暂停时手动发过的话，继续播放时不重复发 */
+      if (D.chat.some(function (c, i) { return !CHAT.sent[i] && c.from === who; })) chatSend(who);
+    }
   }
 
   /* ———— 手机外框 ———— */
@@ -129,7 +133,8 @@
     if (solo) {
       var vw = document.documentElement.clientWidth;
       /* 手机放在最前面：缩到底部轨道之上能放下整屏，主按钮不被盖住 */
-      var avail = innerHeight - $('.bar').offsetHeight - $('.rail').offsetHeight - (st.layout === 2 ? 46 : 0) - 8;
+      $('#play').style.left = '';
+      var avail = innerHeight - $('.bar').offsetHeight - $('.rail').offsetHeight - $('#play').offsetHeight - (st.layout === 2 ? 46 : 0) - 8;
       var k = Math.min(vw / 390, Math.max(.72, avail / 762));
       var who = st.layout === 2 ? S.soloWho : st.solo;
       IDS.forEach(function (id) {
@@ -153,16 +158,16 @@
         var pw = PW * k2, sw = Math.min(W - 2 * pad - 2 * pw - 2 * gap, 560);
         var gx = (W - (2 * pw + sw + 2 * gap)) / 2, y = (H - PH * k2 + CAP) / 2;
         pos.L = { x: gx, y: y, k: k2 }; pos.R = { x: gx + pw + sw + 2 * gap, y: y, k: k2 };
-        side = { left: gx + pw + gap, top: 0, width: sw, height: H };
+        side = { left: gx + pw + gap, top: PLAY_H, width: sw, height: H - PLAY_H };
       } else if (st.layout === 1) {
         var k1 = Math.min(1, (H - CAP - m * 2) / PH), p1 = PW * k1;
         var s1 = Math.min(W - 2 * pad - p1 - 56, st.sideW || 480);
         var gx1 = (W - (p1 + s1 + 56)) / 2, y1 = (H - PH * k1 + CAP) / 2;
         pos[st.solo || 'L'] = { x: gx1, y: y1, k: k1 };
-        side = { left: gx1 + p1 + 56, top: 0, width: s1, height: H };
+        side = { left: gx1 + p1 + 56, top: PLAY_H, width: s1, height: H - PLAY_H };
       } else {
         var s0 = Math.min(W - 2 * pad - 32, 1200);
-        side = { left: (W - s0) / 2, top: 0, width: s0, height: H };
+        side = { left: (W - s0) / 2, top: PLAY_H, width: s0, height: H - PLAY_H };
       }
       IDS.forEach(function (id) {
         var p = pos[id], on = used.indexOf(id) >= 0;
@@ -173,6 +178,8 @@
         }
       });
       Object.keys(side).forEach(function (k) { sideEl.style[k] = side[k] + 'px'; });
+      /* 播放状态在上方中间；单台手机时放到说明栏上方，不压手机 */
+      $('#play').style.left = (st.layout === 1 ? side.left + side.width / 2 : W / 2) + 'px';
     }
     if (!animate) { void stageMain.offsetWidth; stageMain.classList.remove('no-anim'); }
   }
@@ -212,8 +219,8 @@
     $$('.cue', $('#demo')).forEach(function (el) { el.classList.remove('cue'); el.removeAttribute('data-cue'); el.removeAttribute('data-cue-pos'); });
     var offWho = null;
     if (S.auto) return;
-    var atEnd = S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1;
-    if (atEnd && S.started) $('#end-btn').classList.add('cue');
+    /* 最后一步走完，提示点“下一步”到探索页 */
+    if (STEPS[S.step + 1] && STEPS[S.step + 1].outro && S.beat === STEPS[S.step].beats.length - 1) $('[data-ctl="next"]').classList.add('cue');
     var nextChat = chatNext();
     (beatState(S.step, S.beat).cta || []).forEach(function (c) {
       if ((c.turn && nextChat !== c.who) || (c.done && nextChat)) return;
@@ -320,36 +327,48 @@
     clearTimeout(S.hintT);
     S.hintT = setTimeout(function () { el.hidden = true; }, 1800);
   }
-  /* 结束：自动走完、手动走到最后再继续、点结束按钮。自动走完时，已解锁过就不再滚走 */
-  function finishDemo(fromAuto) {
+  /* 看方案：结束按钮和探索页的按钮。播完自动到探索页，不会走到这里 */
+  function endToPlan() {
     clearTimeout(S.timer); clearTimeout(S.passT);
     S.auto = false;
+    if (!STEPS[S.step].outro) goTo(STEPS.length - 1);
+    unlock(true);
     setMode('done');
-    var first = !S.unlocked;
-    unlock(!fromAuto || first);
   }
-  function stepsRemainMs() {
-    var ms = 0, st = STEPS[S.step];
-    for (var j = S.beat + 1; j < st.beats.length; j++) ms += st.beats[j].ms || 2500;
-    for (var i = S.step + 1; i < STEPS.length; i++) {
-      STEPS[i].beats.forEach(function (b, k) { ms += (b.ms || 2500) + (k === 0 && STEPS[i].layout !== 0 ? 300 : 0); });
-    }
+  function beatMs(i, k) { return (STEPS[i].beats[k].ms || 2500) + (k === 0 && STEPS[i].layout !== 0 ? 300 : 0); }
+  function totalMs() {
+    var ms = 0;
+    STEPS.forEach(function (st, i) { if (!st.outro) st.beats.forEach(function (b, k) { ms += beatMs(i, k); }); });
     return ms;
   }
+  /* 从当前位置走到结束还要多久；探索页不计入 */
+  function remainMs() {
+    var st = STEPS[S.step];
+    if (st.outro) return 0;
+    var ms = S.auto ? Math.max(0, (S.beatEnd || 0) - Date.now()) : (pausedLeft() == null ? beatMs(S.step, S.beat) : pausedLeft());
+    for (var j = S.beat + 1; j < st.beats.length; j++) ms += beatMs(S.step, j);
+    for (var i = S.step + 1; i < STEPS.length; i++) if (!STEPS[i].outro) STEPS[i].beats.forEach(function (b, k) { ms += beatMs(i, k); });
+    return ms;
+  }
+  function pausedLeft() {
+    var p = S.paused;
+    return p && p.step === S.step && p.beat === S.beat ? p.left : null;
+  }
   function updateRemain() {
-    var box = $('#remain'), mode = $('#mode-box').dataset.mode;
+    var box = $('#remain'), fill = $('#play-fill');
     if (!box) return;
-    if (mode === 'done') { box.textContent = ''; return; }
-    var cur = STEPS[S.step].beats[S.beat].ms || 2500;
-    var left = S.auto ? Math.max(0, (S.beatEnd || 0) - Date.now()) : (S.started ? cur : cur + 300);
-    var sec = Math.ceil((stepsRemainMs() + left) / 1000);
+    if (S.finished) { box.textContent = ''; fill.style.width = '100%'; return; }
+    var left = remainMs(), sec = Math.ceil(left / 1000);
     box.textContent = ' · ' + (S.started ? '还剩 ' : '全程约 ') + Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2);
+    fill.style.width = (S.started ? (1 - left / totalMs()) * 100 : 0).toFixed(1) + '%';
   }
   function setMode(m) {
-    var el = $('#mode');
-    $('#mode-box').dataset.mode = m;
-    el.textContent = m === 'auto' ? '自动演示中' : m === 'manual' ? '手动操作中' : '演示结束';
-    $('#auto-btn').textContent = m === 'auto' ? '暂停' : '继续自动';
+    if (S.finished) m = 'done';
+    var el = $('#play');
+    el.dataset.mode = m;
+    $('#demo').dataset.mode = m;
+    $('#mode').textContent = m === 'auto' ? '自动播放中' : m === 'done' ? '自己探索中' : S.started ? '自动播放已暂停' : '进入演示区后自动播放';
+    $('#play-act').textContent = m === 'auto' ? '暂停' : m === 'done' ? '重新播放' : S.started ? '继续播放' : '开始';
     updateRemain();
     applyCues();
   }
@@ -395,6 +414,12 @@
   /* ———— 进入某个状态 ———— */
   function apply(prevStep) {
     var st = STEPS[S.step], b = st.beats[S.beat], bs = beatState(S.step, S.beat);
+    if (st.outro) {
+      if (!S.unlocked) unlock(false);
+      S.finished = true; S.auto = false;
+      setMode('done');
+    }
+    stageMain.classList.toggle('is-outro', !!st.outro);
     if (b.order && S.auto) Object.keys(b.order).forEach(function (k) { S.order[k] = b.order[k]; });
     var layoutChanged = S.lastLayout !== st.layout + '|' + (st.solo || '');
     var freshStep = prevStep !== S.step;
@@ -406,14 +431,14 @@
     renderSide(freshStep, bs);
     IDS.forEach(function (id) {
       var who = D.who[id];
-      $('.ph-cap', ph[id]).innerHTML = '<b>' + (st.cap || who.role + ' · ' + who.name) + '</b>';
+      $('.ph-cap', ph[id]).innerHTML = '<b>' + (st.cap || who.role + ' · ' + who.name) + '</b><span>信息是示例，价格是假设</span>';
     });
     if (st.layout > 0) { renderPhone('L', bs.L); renderPhone('R', bs.R); }
     markOverview(st, bs, layoutChanged);
     layoutPhones(true);
     if (st.id === 'chat') chatSync();
     renderRail();
-    $('[data-ctl="next"]').textContent = S.step === STEPS.length - 1 && S.beat === st.beats.length - 1 ? '看方案' : '下一步';
+    $('[data-ctl="next"]').textContent = st.outro ? '看方案' : '下一步';
     clearFx();
     applyCues();
     if (b.toast) setTimeout(function () { toast(b.toast[0], b.toast[1]); }, 120);
@@ -444,15 +469,18 @@
     if (S.step + 1 < STEPS.length) { goTo(S.step + 1, 0); return true; }
     return false;
   }
-  function nextOrFinish() { if (!advance()) finishDemo(false); }
+  function nextOrFinish() { if (!advance()) endToPlan(); }
 
   /* ———— 自动演示：一碰就交给人 ———— */
   function schedule() {
     clearTimeout(S.timer);
     var st = STEPS[S.step], b = st.beats[S.beat];
     var extra = S.beat === 0 && st.layout !== 0 ? 300 : 0;
-    S.beatEnd = Date.now() + (b.ms || 2500) + extra;
-    S.timer = setTimeout(tick, (b.ms || 2500) + extra);
+    /* 暂停后继续：这一拍接着上次剩下的时间走 */
+    var wait = pausedLeft() == null ? (b.ms || 2500) + extra : pausedLeft();
+    S.paused = null;
+    S.beatEnd = Date.now() + wait;
+    S.timer = setTimeout(tick, wait);
   }
   function stageInView() {
     var r = $('#demo').getBoundingClientRect();
@@ -461,7 +489,6 @@
   function tick() {
     if (!S.auto) return;
     if (!stageInView()) { S.timer = setTimeout(tick, 500); return; }
-    if (S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1) { finishDemo(true); return; }
     advance();
   }
   function play() {
@@ -474,12 +501,21 @@
     S.started = true;
     if (S.timer) clearTimeout(S.timer);
     var wasAuto = S.auto;
+    if (wasAuto) S.paused = { step: S.step, beat: S.beat, left: Math.max(0, (S.beatEnd || 0) - Date.now()) };
     S.auto = false; setMode('manual');
     armPass();
     if (wasAuto && STEPS[S.step].overview) apply(S.step);
   }
+  /* 继续播放：回到当前步骤的流程，接着上次的时间走 */
+  function resume() {
+    S.free = {}; S.overPick = null; CHAT.manual = false;
+    S.auto = true; S.started = true;
+    apply(S.step);
+    play();
+  }
   function replay() {
     S.free = {}; S.claimCase = 'normal'; resetOrder();
+    S.finished = false; S.paused = null;
     S.lastLayout = null;
     S.step = 0; S.beat = 0;
     apply(-1);
@@ -547,7 +583,7 @@
     var demo = $('#demo');
     /* 只有点击才转手动；鼠标移动、滚动、触屏划动都不打断自动演示 */
     demo.addEventListener('click', function (e) {
-      if (e.target.closest('[data-ctl="auto"],[data-ctl="replay"]')) return;
+      if (e.target.closest('[data-ctl="auto"],[data-ctl="replay"],[data-ctl="end"]')) return;
       if (S.auto) takeOver();
     });
     demo.addEventListener('mouseover', onHover);
@@ -627,10 +663,10 @@
       if ((n = t.closest('[data-ctl]'))) {
         var k = n.dataset.ctl;
         if (k === 'next') { takeOver(); nextOrFinish(); }
-        if (k === 'end') { takeOver(); finishDemo(false); }
+        if (k === 'end') { takeOver(); endToPlan(); }
         if (k === 'prev') { takeOver(); if (S.beat > 0) goTo(S.step, S.beat - 1); else if (S.step > 0) goTo(S.step - 1); }
         if (k === 'replay') replay();
-        if (k === 'auto') { if (S.auto) takeOver(); else if (S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1) replay(); else play(); }
+        if (k === 'auto') { if (S.finished) replay(); else if (S.auto) takeOver(); else resume(); }
       }
     });
     document.addEventListener('keydown', function (e) {
@@ -667,15 +703,18 @@
     }).join('');
     var scope = B.scope.map(function (r) { return '<div class="scp" data-grow="' + r.id + '"><b>' + r.k + '</b><span>' + r.t + '</span></div>'; }).join('');
     $('#brief').innerHTML = '<div class="paper"><button class="paper-skip" id="skip">' + B.skip + '</button><div class="paper-g"><div class="paper-text"><h3>' + B.paperTitle + '</h3>' + paras + '<div class="paper-margin">' + margin + '</div></div><div class="paper-notes">' + notes + '</div></div><svg class="paper-svg"></svg></div>' +
-      '<div class="sum"><h1>' + D.oneLine + '</h1><h4>' + B.painTitle + '</h4><div class="sols">' + pains + '</div><h4>' + B.scopeTitle + '</h4><div class="scps">' + scope + '</div><div class="cta"><button class="cta-1" id="cta-auto">' + B.ctaAuto + '</button><button class="cta-2" id="cta-free">' + B.ctaFree + '</button><small>' + B.ctaAutoNote + '</small></div><p class="res-line" data-grow="res">' + B.researchLine + ' <a href="#research">' + B.researchLink + '</a></p></div>';
+      '<div class="sum"><h1>' + D.oneLine + '</h1><h4>' + B.painTitle + '</h4><div class="sols">' + pains + '</div><h4>' + B.scopeTitle + '</h4><div class="scps">' + scope + '</div><div class="cta"><button class="cta-1" id="cta-auto">' + B.ctaAuto + '</button><button class="cta-2" id="cta-free">' + B.ctaFree + '</button><small>' + B.ctaAutoNote + '</small></div><div class="cd" id="cd" hidden><span id="cd-text"></span><button id="cd-stay">' + B.stay + '</button></div><p class="res-line" data-grow="res">' + B.researchLine + ' <a href="#research">' + B.researchLink + '</a></p></div>';
     $('#skip').addEventListener('click', function () { finishBrief(); });
     $('#cta-auto').addEventListener('click', function () {
+      S.cdOff = true; cancelCountdown();
       finishBrief();
       S.free = {}; S.step = 0; S.beat = 0; S.lastLayout = null; resetOrder();
       play(); apply(-1);
       $('#demo').scrollIntoView();
     });
+    $('#cd-stay').addEventListener('click', cancelCountdown);
     $('#cta-free').addEventListener('click', function () {
+      S.cdOff = true; cancelCountdown();
       finishBrief(); takeOver();
       goTo(0);
       $('#demo').scrollIntoView();
@@ -729,6 +768,33 @@
     briefTimers.forEach(clearTimeout);
     showAllMarks();
     var skip = $('#skip'); if (skip) skip.classList.add('done');
+    startCountdown();
+  }
+  /* 审题播完留几秒阅读，再滚到演示区；用户一动就取消，滚到演示区时照样自动开始 */
+  function startCountdown() {
+    if (S.started || S.cdOff || S.cdT) return;
+    S.cdOff = true;
+    var left = D.brief.countdown, box = $('#cd'), text = $('#cd-text');
+    if (!box) return;
+    var show = function () { text.textContent = left + D.brief.countdownText; };
+    show();
+    box.hidden = false;
+    S.cdT = setInterval(function () {
+      left--;
+      if (left > 0) { show(); return; }
+      cancelCountdown();
+      $('#demo').scrollIntoView();
+    }, 1000);
+    window.addEventListener('wheel', cancelCountdown, { once: true, passive: true });
+    window.addEventListener('touchmove', cancelCountdown, { once: true, passive: true });
+    window.addEventListener('keydown', cancelCountdown, { once: true });
+    window.addEventListener('scroll', cdScroll, { passive: true });
+  }
+  function cdScroll() { if (scrollY > 8) cancelCountdown(); }
+  function cancelCountdown() {
+    clearInterval(S.cdT); S.cdT = null;
+    window.removeEventListener('scroll', cdScroll);
+    var box = $('#cd'); if (box) box.hidden = true;
   }
   function grow(id) { var el = $('[data-grow="' + id + '"]'); if (el) el.classList.remove('off'); }
   function playBrief() {
@@ -794,14 +860,11 @@
     /* 演示区进入视野时自动开始（只一次） */
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
-        if (e.isIntersecting && !S.started) { S.started = true; finishBrief(); play(); }
+        if (e.isIntersecting && !S.started) { S.started = true; S.cdOff = true; cancelCountdown(); finishBrief(); play(); }
       });
-    }, { threshold: .6 });
+    }, { threshold: .35 });
     io.observe($('#demo'));
     setMode('manual');
-    updateRemain();
-    $('#mode').textContent = '等待开始';
-    $('#auto-btn').textContent = '自动播放';
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

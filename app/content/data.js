@@ -42,9 +42,12 @@ window.CONTENT = {
     ],
     researchLine: '调研：约 16:36 开始，16:51 写完第一轮 4 份，22:40 前后累计 8 份',
     researchLink: '看依据和链接',
-    ctaAuto: '按顺序看演示',
-    ctaAutoNote: '自动走完，不到 1 分 30 秒',
-    ctaFree: '自己点着看'
+    ctaAuto: '开始演示',
+    ctaAutoNote: '自动播放，不到 1 分 30 秒',
+    countdown: 6,
+    countdownText: ' 秒后开始演示',
+    stay: '留在这里',
+    ctaFree: '自己点点看'
   },
 
   /* ———— 人物和地点（虚构） ———— */
@@ -69,6 +72,17 @@ window.CONTENT = {
       { name: '圈子', tag: 'common', text: '加了论坛，大家可以发帖交流。', boxes: ['.weui-tabbar__item:nth-child(3)'], enter: { step: 'circle' }, enterLabel: '进去看看' },
       { name: '我的', tag: 'new', text: '加了信用分。', boxes: ['.weui-tabbar__item:nth-child(4)'], enter: { screen: 'me' }, enterLabel: '进去看看' }
     ]
+  },
+
+  /* ———— 播完后的探索页 ———— */
+  explore: {
+    items: [
+      { name: '模拟丢件', say: '看平台怎么判责任、谁来赔', go: 'claim' },
+      { name: '抢一批', say: '确认抢批，看另一台手机同时变化', go: 'grab' },
+      { name: '发一条聊天', say: '自己打字，另一台手机马上收到', go: 'chat' },
+      { name: '改规格和保险', say: '勾选或取消，合计跟着变', go: 'price' }
+    ],
+    plan: '看产品方案'
   },
 
   /* ———— 服务宫格 ———— */

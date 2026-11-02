@@ -3,6 +3,7 @@
 .mp-status { background: #fff; }
 .mp-nav { background: #fff; border-bottom: .5px solid rgba(0,0,0,.08); }
 .nav-back { position: absolute; left: 8px; top: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: #111; cursor: pointer; }
+.nav-back[hidden] { display: none; }
 .mp-view { background: #f4f5f7; display: flex; flex-direction: column; }
 .view-in { animation: vIn .32s cubic-bezier(.22,.8,.2,1); }
 @keyframes vIn { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }

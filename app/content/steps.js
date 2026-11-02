@@ -7,6 +7,7 @@
             affects 是因果预告：悬停这个按钮时，哪些区域亮起描边，note 是小字
    link     说明联动：悬停说明栏的规则时，手机里哪些元素亮起
    sideW    单台手机时说明栏的宽度
+   outro    播完后的探索页：到这里算演示结束，解锁方案，不计入倒计时
    basis    说明栏下面的简短依据：t 是文字，links 是 research.js 里 SOURCES 的键名
    solo     layout 为 1 时用哪台（L 发单同学，R 接单同学）
    side     说明文字；w 是说明栏里的组件（见 screens.js 的 WIDGETS）
@@ -157,7 +158,7 @@ window.STEPS = [
       { w: ['chain', { n: 2 }], ms: 1700, pass: true },
       { w: ['chain', { n: 3 }], ms: 1700, pass: true },
       { w: ['chain', { n: 4 }], ms: 1700, pass: true },
-      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], ms: 3200, focus: 'L', cta: [{ who: 'L', sel: '.mp-btn', label: '点这里看圈子' }] }
+      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], basis: null, ms: 3200, focus: 'L', cta: [{ who: 'L', sel: '.mp-btn', label: '点这里看圈子' }] }
     ]
   },
   {
@@ -169,5 +170,11 @@ window.STEPS = [
       { L: ['circle', { sheet: 1 }], ms: 1500, cta: [{ who: 'L', sel: '.sheet-box .mp-btn', label: '点这里提交' }] },
       { L: ['circle', {}], ms: 900, toast: ['L', '已提交举报'], cta: null }
     ]
+  },
+  {
+    id: 'explore', name: '自己试', layout: 1, solo: 'L', outro: true, sideW: 520, cap: '首页',
+    side: { eyebrow: '演示结束', title: '现在自己点点看', note: '手机里的按钮都能点，默认值都填好了。这几个入口值得试：', w: ['explore'] },
+    cta: [{ who: 'side', sel: '.ex-plan' }],
+    beats: [{ L: ['home'], ms: 0 }]
   }
 ];

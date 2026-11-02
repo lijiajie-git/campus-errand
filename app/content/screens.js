@@ -247,6 +247,10 @@
         return '<li class="hg-i' + (it.heavy ? ' hg-heavy' : '') + (i === a.sel ? ' on' : '') + (i < a.shown ? '' : ' off') + '" data-ovi="' + i + '"><i>' + (i + 1) + '</i><div><b>' + it.name + '</b><em class="ft-' + it.tag + '">' + G.tags[it.tag] + '</em><p>' + it.text + (it.small ? '<small>' + it.small + '</small>' : '') + (it.enter ? ' <a data-ov-enter="' + i + '">' + it.enterLabel + ' ›</a>' : '') + '</p></div></li>';
       }).join('') + '</ol>';
     },
+    explore: function () {
+      var E = D.explore;
+      return '<ul class="ex">' + E.items.map(function (it) { return '<li><button data-goto="' + it.go + '"><b>' + it.name + '</b><span>' + it.say + '</span><i>›</i></button></li>'; }).join('') + '</ul><button class="ex-plan" data-ctl="end">' + E.plan + ' →</button>';
+    },
     dock: function () { return '<div class="dock"><span class="dock-tag">平台</span></div>'; },
     services: function () {
       return '<ul class="mini-list">' + D.services.map(function (s) { return '<li><b>' + s.t + '</b>' + (s.full ? '完整流程' : s.hint) + '</li>'; }).join('') + '</ul>';
