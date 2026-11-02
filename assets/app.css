@@ -246,6 +246,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .rail-ctl #end-btn:hover { background: #ffc24d; color: var(--ink); }
 .rail #end-btn.cue { animation-name: cueRingA; }
 html.locked #plan, html.locked #how, html.locked #scope { display: none; }
+html.locked .bar nav a[href="#plan"], html.locked .bar nav a[href="#how"], html.locked .bar nav a[href="#scope"] { display: none; }
 .bar nav a.is-locked { opacity: .5; cursor: not-allowed; align-items: center; }
 .bar nav a.is-locked:hover { color: var(--dim); }
 .nav-lock { display: inline-flex; }

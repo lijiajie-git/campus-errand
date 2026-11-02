@@ -838,7 +838,7 @@
     if (q.get('unlock') === '0') writeUnlocked(false);
     markNavLocked();
     if (q.get('unlock') === '1') unlock(false, false);
-    else if (readUnlocked()) unlock(false, false);
+    /* 不记住解锁：每次打开都要看完或点结束，后面的内容才出现 */
     setInterval(updateRemain, 500);
     apply(-1);
     drawBriefMarks(false);
