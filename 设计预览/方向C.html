@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方向 C · 校园招贴</title>
+<link rel="stylesheet" href="vendor/weui.min.css">
+<link rel="stylesheet" href="vendor/devices-iphone14pro.css">
+<link rel="stylesheet" href="assets/phone.css">
+<style>
+  :root {
+    --blue: #1537d6; --deep: #0e2596; --white: #fff; --yellow: #ffe500; --ink: #0a1440; --dim: rgba(255, 255, 255, .72);
+    --sans: "PingFang SC", "Microsoft YaHei", -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--blue); color: var(--white); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  a { cursor: pointer; color: inherit; }
+  :focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+  .topnav { position: fixed; z-index: 60; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; font-size: 13px; background: var(--ink); padding: 3px; border-radius: 3px; }
+  .topnav a { padding: 2px 10px; color: var(--dim); }
+  .topnav a.is-on { background: var(--yellow); color: var(--ink); font-weight: 600; }
+
+  /* 钉住的演示：外层五段高度，内层 sticky */
+  .scrolly { height: 500vh; position: relative; }
+  .pin { position: sticky; top: 0; height: 100vh; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: 0 28px; overflow: hidden; }
+  .mid { padding: 0 clamp(16px, 2.6vw, 40px); display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box; }
+  .num { font: 700 clamp(64px, 8vw, 112px)/.9 var(--mono); color: var(--yellow); letter-spacing: -.06em; }
+  .big { font-size: clamp(26px, 3.1vw, 44px); line-height: 1.16; font-weight: 700; margin-top: 10px; letter-spacing: -.02em; }
+  .mid p { margin-top: 10px; color: var(--dim); font-size: 14px; min-height: 3em; }
+  .dock { height: calc(112px * var(--s, 1)); position: relative; margin-top: 6px; }
+  .dock::before { content: ""; position: absolute; top: 50%; left: -60px; right: -60px; height: 2px; background: rgba(255, 255, 255, .28); }
+  .dock.is-live::before { background: var(--yellow); }
+  .bar { display: flex; gap: 10px; align-items: center; margin-top: 8px; font-size: 13px; }
+  .bar .prog { flex: 1; height: 3px; background: rgba(255, 255, 255, .25); position: relative; }
+  .bar .prog i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--yellow); width: 0; transition: width .3s; }
+  .bar button { padding: 4px 12px; background: var(--yellow); color: var(--ink); font-weight: 600; border-radius: 2px; }
+
+  .poster { background: var(--white); color: var(--ink); padding: 64px 32px 88px; }
+  .wrap { max-width: 1160px; margin: 0 auto; }
+  .poster h2, .how h2 { font-size: clamp(36px, 5vw, 72px); line-height: 1.05; font-weight: 700; letter-spacing: -.03em; }
+  .flow { display: grid; grid-template-columns: 110px 1fr 1fr 1fr; margin-top: 40px; font-size: 14px; }
+  .flow > div { padding: 12px 14px 12px 0; border-top: 2px solid var(--ink); }
+  .flow .h { font: 12px var(--mono); border-top: 0; color: var(--blue); }
+  .flow .r { color: var(--blue); font-weight: 600; }
+  .flow .f { font-weight: 700; }
+  .facts { margin-top: 56px; columns: 2; column-gap: 56px; }
+  .facts section { break-inside: avoid; padding-bottom: 28px; }
+  .facts h3 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .facts p { margin-top: 4px; color: #475077; }
+  .todo { font: 11px var(--mono); background: var(--yellow); color: var(--ink); padding: 0 5px; margin-right: 4px; }
+
+  /* 第三部分：对话回放为主，上方是窗口条 */
+  .how { background: var(--deep); padding: 64px 32px 88px; }
+  .how .lead { color: var(--dim); margin-top: 12px; max-width: 44em; }
+  .wins { display: grid; grid-template-columns: 120px 1fr; margin-top: 32px; font-size: 12px; row-gap: 4px; align-items: center; }
+  .wins .w { height: 12px; position: relative; background: rgba(255, 255, 255, .08); }
+  .wins .w i { position: absolute; top: 0; bottom: 0; background: rgba(255, 255, 255, .5); }
+  .wins .w i.stop { background: #ff5a5a; }
+  .wins .w b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--yellow); transition: left .3s; }
+  .chat { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 32px; }
+  .bubble { max-width: 76%; padding: 10px 14px; border-radius: 2px; margin-bottom: 10px; }
+  .bubble.me { background: var(--yellow); color: var(--ink); margin-left: auto; font-weight: 600; }
+  .bubble.ai { background: rgba(255, 255, 255, .12); }
+  .bubble small { display: block; font: 11px var(--mono); opacity: .7; margin-bottom: 2px; font-weight: 400; }
+  .chatlog { min-height: 280px; }
+  .side h4 { font: 12px var(--mono); color: var(--dim); font-weight: 400; }
+  .side ol { list-style: none; margin-top: 8px; }
+  .side li { padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, .2); font-weight: 600; }
+  .side li i { font: 11px var(--mono); margin-right: 8px; color: var(--yellow); }
+  .next { margin-top: 12px; padding: 8px 14px; background: var(--yellow); color: var(--ink); font-weight: 700; border-radius: 2px; }
+
+  /* 手机宽度 */
+  .solo .scrolly { height: 500vh; }
+  .solo .pin { display: flex; flex-direction: column; padding: 46px 0 0; justify-content: flex-start; align-items: center; }
+  .solo .topnav { font-size: 12px; white-space: nowrap; }
+  .solo .mid { order: 3; height: auto; padding: 10px 16px; width: 100%; box-sizing: border-box; flex: none; }
+  .solo .num, .solo .dock, .solo .mid p { display: none; }
+  .solo .big { font-size: 18px; margin: 0; }
+  .solo .poster, .solo .how { padding: 40px 16px 56px; }
+  .solo .flow { grid-template-columns: 76px 1fr 1fr 1fr; font-size: 12px; }
+  .solo .facts { columns: 1; }
+  .solo .chat { grid-template-columns: minmax(0, 1fr); }
+  .solo .wins { grid-template-columns: 96px 1fr; }
+  .solo-switch { display: none; }
+</style>
+</head>
+<body data-weui-theme="light">
+
+<nav class="topnav" id="topnav">
+  <a href="#demo" class="is-on">演示</a><a href="#plan">方案</a><a href="#how">过程</a>
+</nav>
+
+<main>
+  <section class="scrolly" id="demo">
+    <div class="pin">
+      <div id="sender"></div>
+      <div class="mid">
+        <div class="num" id="num">01</div>
+        <div class="big" id="big"></div>
+        <div class="dock" id="via"></div>
+        <p id="note"></p>
+        <div class="bar"><div class="prog"><i id="prog"></i></div><button id="autoscroll">自动播放</button></div>
+      </div>
+      <div id="runner"></div>
+    </div>
+  </section>
+
+  <section class="poster" id="plan">
+    <div class="wrap">
+      <h2>两端各做什么，<br>平台管什么。</h2>
+      <div class="flow">
+        <div class="h">流程</div><div class="h">发单端</div><div class="h">平台规则</div><div class="h">接单端</div>
+        <div class="f">校内认证</div><div>认证后才能发布</div><div class="r">校内身份校验</div><div>认证后才能接单</div>
+        <div class="f">发布</div><div>填任务，取件码不公开</div><div class="r">禁发代考、代签到；代占座加限制</div><div>大厅看到新任务</div>
+        <div class="f">接单</div><div>收到接单通知</div><div class="r">信用分决定上限和可接类型</div><div>确认接单</div>
+        <div class="f">履约</div><div>查看进度</div><div class="r">接单后才解锁取件码</div><div>取件，留凭证</div>
+        <div class="f">确认放款</div><div>确认收到</div><div class="r">确认后放款（模拟）</div><div>收到费用</div>
+      </div>
+      <div class="facts">
+        <section><h3>痛点</h3><p><span class="todo">待填</span>等行业调研结果。</p></section>
+        <section><h3>用户</h3><p><span class="todo">待填</span>等行业调研结果。</p></section>
+        <section><h3>信用规则</h3><p>完成任务 → 信用提升 → 解锁更多任务。<span class="todo">待填</span>分值和门槛。</p></section>
+        <section><h3>取舍</h3><p>暂不做真实支付和真后端：题面优先看产品结构和功能设计。</p></section>
+        <section><h3>指标</h3><p><span class="todo">待填</span>不编数字，定义好再写。</p></section>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="wrap">
+      <h2>我是怎么做的。</h2>
+      <p class="lead">点“下一条”回放真实记录，上面的窗口条跟着走。这里是记录摘要，不是逐字原文；内容之后由本人筛选。</p>
+      <div class="wins" id="wins"></div>
+      <div class="chat">
+        <div>
+          <div class="chatlog" id="chatlog"></div>
+          <button class="next" id="nextmsg">下一条</button>
+        </div>
+        <aside class="side"><h4>工作原则（本人原话整理）</h4><ol id="plist"></ol></aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/process.js"></script>
+<script>
+  (function () {
+    var Core = window.PreviewCore, Proc = window.PreviewProcess;
+    var demo = new Core.Demo({
+      sender: document.getElementById('sender'),
+      runner: document.getElementById('runner'),
+      via: function () { return document.getElementById('via'); },
+      minScale: .6,
+      flyMs: 1100,
+      soloMaxH: function (vh) { return vh - 170; },
+      available: function (vw, vh) { return { h: vh - 36, w: (vw - 56 - 300) / 2 }; },
+      onStep: function (n, info) {
+        document.getElementById('num').textContent = '0' + (n + 1);
+        document.getElementById('big').textContent = info.rule;
+        document.getElementById('note').textContent = info.note;
+        document.getElementById('prog').style.width = ((n + 1) / Core.STEPS.length * 100) + '%';
+      },
+      onFlyStart: function () { document.getElementById('via').classList.add('is-live'); },
+      onFlyEnd: function () { document.getElementById('via').classList.remove('is-live'); applyTarget(); }
+    });
+
+    // 滚动 → 步骤
+    var section = document.getElementById('demo'), target = 0;
+    function applyTarget() {
+      if (demo.busy || demo.step === target) return;
+      var forwardOne = target === demo.step + 1;
+      demo.go(target, !forwardOne);
+    }
+    function onScroll() {
+      var r = section.getBoundingClientRect();
+      var range = section.offsetHeight - window.innerHeight;
+      var t = Math.min(1, Math.max(0, -r.top / range));
+      target = Math.min(4, Math.floor(t * 5));
+      applyTarget();
+      var y = window.scrollY + window.innerHeight * .4;
+      var on = y < document.getElementById('plan').offsetTop ? 0 : y < document.getElementById('how').offsetTop ? 1 : 2;
+      [].forEach.call(document.getElementById('topnav').children, function (a, i) { a.classList.toggle('is-on', i === on); });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // 手机按钮和自动播放都走滚动，状态只有一个来源
+    function scrollToStep(n) {
+      var range = section.offsetHeight - window.innerHeight;
+      window.scrollTo({ top: section.offsetTop + (n + .05) / 5 * range, behavior: 'smooth' });
+    }
+    document.addEventListener('click', function (e) { if (e.target.closest('[data-act]')) scrollToStep(demo.step + 1); }, true);
+    var autoT;
+    document.getElementById('autoscroll').addEventListener('click', function () {
+      clearInterval(autoT);
+      var n = demo.step;
+      if (n >= 4) { n = -1; }
+      scrollToStep(++n);
+      autoT = setInterval(function () {
+        if (n >= 4) { clearInterval(autoT); return; }
+        scrollToStep(++n);
+      }, 2800);
+    });
+    ['wheel', 'touchstart'].forEach(function (k) { window.addEventListener(k, function () { clearInterval(autoT); }, { passive: true }); });
+
+    // 过程：窗口条 + 对话回放
+    var T0 = 16 * 60 + 28, T1 = 16 * 60 + 47;
+    var bars = [['主窗口', [[989, null]]], ['子 agent × 3', [[996, 996.5, 'stop']]], ['前端资源', [[996, 1003], [1004, null]]], ['行业调研', [[996.6, null]]]];
+    function pct(t) { return ((t - T0) / (T1 - T0) * 100) + '%'; }
+    document.getElementById('wins').innerHTML = bars.map(function (b) {
+      return '<div>' + b[0] + '</div><div class="w">' + b[1].map(function (x) { var to = x[1] == null ? T1 : x[1]; return '<i' + (x[2] ? ' class="stop"' : '') + ' style="left:' + pct(x[0]) + ';width:calc(' + pct(to) + ' - ' + pct(x[0]) + ');min-width:3px"></i>'; }).join('') + '<b data-head style="left:0"></b></div>';
+    }).join('');
+    var log = document.getElementById('chatlog'), i = 0;
+    function addMsg() {
+      if (i >= Proc.EVENTS.length) { log.innerHTML = ''; i = 0; }
+      var e = Proc.EVENTS[i++];
+      log.insertAdjacentHTML('beforeend', '<div class="bubble me"><small>' + e.time + ' · 本人</small>' + e.ask + '</div><div class="bubble ai"><small>AI · ' + e.src + '</small>' + e.did + '</div>');
+      while (log.children.length > 4) log.removeChild(log.firstChild);
+      [].forEach.call(log.children, function (c) { if (c.dataset.seen) return; c.dataset.seen = 1; c.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'ease-out' }); });
+      document.querySelectorAll('[data-head]').forEach(function (h) { h.style.left = pct(e.t); });
+    }
+    addMsg(); addMsg();
+    document.getElementById('nextmsg').addEventListener('click', addMsg);
+    document.getElementById('plist').innerHTML = Proc.PRINCIPLES.map(function (p, n) { return '<li><i>' + (n + 1) + '</i>' + p.name + '</li>'; }).join('');
+  })();
+</script>
+</body>
+</html>

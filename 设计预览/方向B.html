@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方向 B · 产品说明书</title>
+<link rel="stylesheet" href="vendor/weui.min.css">
+<link rel="stylesheet" href="vendor/devices-iphone14pro.css">
+<link rel="stylesheet" href="assets/phone.css">
+<link rel="stylesheet" href="assets/lanes.css">
+<style>
+  :root {
+    --bg: #c6c9c4; --bg2: #d4d6d1; --txt: #111; --dim: #4c4f4a; --line: rgba(0, 0, 0, .26); --hot: #e8400c;
+    --lz-line: rgba(0, 0, 0, .22); --lz-dim: #4c4f4a; --lz-bar: #111; --lz-dot: #111; --lz-accent: #e8400c; --lz-key: #e8400c; --lz-bg: #c6c9c4; --lz-link: rgba(0, 0, 0, .3);
+    --sans: "PingFang SC", "Microsoft YaHei", -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --rail: 156px;
+  }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--txt); font-family: var(--sans); font-size: 14px; line-height: 1.55; overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: left; }
+  a { cursor: pointer; color: inherit; }
+  :focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+
+  .rail { position: fixed; left: 0; top: 0; bottom: 0; width: var(--rail); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 20px 16px; box-sizing: border-box; z-index: 30; background: var(--bg); }
+  .rail h1 { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .rail h1 small { display: block; font-size: 11px; font-weight: 400; color: var(--dim); margin-top: 2px; }
+  .chapters { margin-top: auto; display: flex; flex-direction: column; }
+  .chapters button { padding: 12px 0; border-top: 1px solid var(--line); }
+  .chapters i { display: block; font: 600 30px/1 var(--mono); letter-spacing: -.04em; color: rgba(0, 0, 0, .3); transition: color .2s; }
+  .chapters span { display: block; margin-top: 4px; font-size: 13px; color: var(--dim); }
+  .chapters button.is-on i { color: var(--hot); }
+  .chapters button.is-on span { color: var(--txt); font-weight: 600; }
+  .hint { font: 11px var(--mono); color: var(--dim); margin-top: 12px; }
+
+  .main { position: fixed; left: var(--rail); right: 0; top: 0; bottom: 0; overflow: hidden; }
+  .slot { position: absolute; left: 0; top: 0; transition: transform .55s cubic-bezier(.3, .9, .25, 1), opacity .3s; will-change: transform; z-index: 5; }
+  .slot .phone-slot, .slot .phone-scale { transition: width .55s cubic-bezier(.3, .9, .25, 1), height .55s cubic-bezier(.3, .9, .25, 1), transform .55s cubic-bezier(.3, .9, .25, 1); }
+  .label { position: absolute; font: 11px var(--mono); color: var(--dim); white-space: nowrap; top: -14px; left: calc(34px * var(--s, 1)); }
+
+  .ch { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .25s; overflow: auto; box-sizing: border-box; }
+  body[data-ch="1"] .ch1, body[data-ch="2"] .ch2, body[data-ch="3"] .ch3 { opacity: 1; pointer-events: auto; }
+
+  /* 第一章 */
+  .ch1-center { position: absolute; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 clamp(16px, 2vw, 28px); box-sizing: border-box; }
+  .ch1-center h2 { font-size: clamp(22px, 2.1vw, 28px); line-height: 1.25; font-weight: 600; letter-spacing: -.01em; }
+  .tagline { font: 11px var(--mono); color: var(--dim); margin-bottom: 8px; }
+  .dock { position: relative; height: calc(112px * var(--s, 1)); margin: 12px 0; }
+  .dock::before { content: ""; position: absolute; top: 50%; left: -48px; right: -48px; height: 1px; background: var(--txt); }
+  .dock.is-live::before { background: var(--hot); height: 2px; }
+  .dock span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--bg); padding: 1px 8px; font: 11px var(--mono); border: 1px solid var(--txt); white-space: nowrap; }
+  .dock.is-live span { color: #fff; background: var(--hot); border-color: var(--hot); }
+  .rule { font-size: 16px; font-weight: 600; line-height: 1.35; min-height: 2.7em; }
+  .note { color: var(--dim); font-size: 13px; min-height: 2.9em; }
+  .steps { margin-top: 10px; border-top: 1px solid var(--txt); }
+  .steps button { display: flex; width: 100%; gap: 10px; padding: 4px 0; font-size: 13px; color: var(--dim); border-bottom: 1px solid var(--line); }
+  .steps i { font: 11px/20px var(--mono); }
+  .steps button.is-on { color: var(--txt); font-weight: 600; }
+  .steps button.is-on i { color: var(--hot); }
+  .ctl { display: flex; gap: 8px; align-items: center; margin-top: 10px; font: 11px var(--mono); color: var(--dim); }
+  .ctl button { border: 1px solid var(--txt); padding: 2px 8px; font-family: var(--sans); font-size: 12px; color: var(--txt); }
+  .ctl button:hover { background: var(--txt); color: var(--bg); }
+  .ctl b { margin-right: auto; font-weight: 400; }
+
+  /* 第二章 */
+  .ch2-in { padding: 28px 32px; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; }
+  .ch2 h2, .ch3 h2 { font-size: clamp(24px, 2.4vw, 32px); line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
+  .rows { margin-top: 14px; border-top: 1px solid var(--txt); }
+  .rows button { display: grid; grid-template-columns: 76px 1fr; width: 100%; padding: 7px 0; border-bottom: 1px solid var(--line); gap: 8px; }
+  .rows b { font-weight: 600; }
+  .rows span { color: var(--dim); }
+  .rows button:hover span, .rows button.is-on span { color: var(--txt); }
+  .rows button.is-on b { color: var(--hot); }
+  .tabs { display: flex; gap: 14px; margin-top: 18px; border-bottom: 1px solid var(--txt); flex-wrap: wrap; }
+  .tabs button { padding: 4px 0; color: var(--dim); }
+  .tabs button.is-on { color: var(--txt); font-weight: 600; box-shadow: 0 2px 0 var(--hot); }
+  .tabc { padding-top: 10px; color: var(--dim); min-height: 66px; }
+  .todo { font: 11px var(--mono); border: 1px solid var(--line); padding: 0 4px; margin-right: 4px; }
+
+  /* 第三章 */
+  .ch3-in { padding: 28px 32px; box-sizing: border-box; min-height: 100%; display: grid; grid-template-columns: 200px minmax(0, 1fr); column-gap: 28px; align-content: start; }
+  .ch3-head { grid-column: 1 / -1; margin-bottom: 16px; }
+  .ch3-head p { color: var(--dim); margin-top: 4px; font-size: 13px; }
+  .plist { border-top: 1px solid var(--txt); }
+  .plist button { display: block; width: 100%; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .plist i { display: block; font: 11px var(--mono); color: var(--dim); }
+  .plist button.is-on { font-weight: 600; }
+  .plist button.is-on i { color: var(--hot); }
+  .ev { margin-top: 12px; border-top: 2px solid var(--txt); padding-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; font-size: 13px; min-height: 86px; }
+  .ev header { grid-column: 1 / -1; font-weight: 600; margin-bottom: 4px; font-size: 14px; }
+  .ev time { font: 12px var(--mono); color: var(--hot); margin-right: 8px; font-weight: 400; }
+  .ev dt { font: 11px var(--mono); color: var(--dim); }
+  .replay { margin-top: 10px; border: 1px solid var(--txt); padding: 3px 10px; font-size: 13px; }
+  .replay:hover { background: var(--txt); color: var(--bg); }
+
+  /* 手机宽度 */
+  .solo body { overflow: auto; }
+  .solo .rail { position: sticky; width: 100%; flex-direction: row; align-items: center; height: 52px; padding: 0 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .solo .rail h1 small, .solo .hint { display: none; }
+  .solo .chapters { flex-direction: row; margin: 0 0 0 auto; gap: 12px; }
+  .solo .chapters button { border: 0; padding: 0; }
+  .solo .chapters i { display: none; }
+  .solo .main { position: static; overflow: visible; }
+  .solo .ch { position: static; display: none; opacity: 1; pointer-events: auto; overflow: visible; }
+  .solo body[data-ch="1"] .ch1, .solo body[data-ch="2"] .ch2, .solo body[data-ch="3"] .ch3 { display: block; }
+  .solo .slot { position: static; transform: none !important; display: none; }
+  .solo body[data-ch="1"] .slot { display: block; }
+  .solo .slot .phone-slot { margin: 12px auto 0; }
+  .solo .label { display: none; }
+  .solo .ch1-center { position: static; width: auto !important; left: auto !important; padding: 12px 16px 24px; }
+  .solo .dock { display: none; }
+  .solo-switch { display: none; }
+  .solo body[data-ch="1"] .solo-switch { display: flex; margin: 12px 16px 0; border: 1px solid var(--txt); }
+  .solo-switch button { flex: 1; text-align: center; padding: 8px 0; }
+  .solo-switch button.is-on { background: var(--txt); color: var(--bg); }
+  .solo .ch2-in, .solo .ch3-in { padding: 20px 16px; height: auto; display: block; }
+  .solo .lanes { display: none; }
+  .solo .ev { grid-template-columns: minmax(0, 1fr); }
+  .mobile-list { display: none; list-style: none; border-top: 1px solid var(--txt); margin-top: 14px; }
+  .solo .mobile-list { display: block; }
+  .mobile-list li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .mobile-list time { font: 12px var(--mono); color: var(--hot); margin-right: 8px; }
+  .solo .ev, .solo .replay { display: none; }
+</style>
+</head>
+<body data-weui-theme="light" data-ch="1">
+
+<aside class="rail">
+  <h1>顺手帮<small>校园跑腿互助平台<br>暂定名</small></h1>
+  <div class="chapters" id="chapters">
+    <button data-ch-go="1" class="is-on"><i>01</i><span>产品演示</span></button>
+    <button data-ch-go="2"><i>02</i><span>产品方案</span></button>
+    <button data-ch-go="3"><i>03</i><span>我是怎么做的</span></button>
+  </div>
+  <div class="hint">← → 切换章节</div>
+</aside>
+
+<main class="main" id="main">
+  <div class="solo-switch"><button data-solo="sender" class="is-on">发单端</button><button data-solo="runner">接单端</button></div>
+  <div class="slot" id="slot-s"><span class="label">A 发单端</span><div id="sender"></div></div>
+  <div class="slot" id="slot-r"><span class="label">B 接单端</span><div id="runner"></div></div>
+
+  <section class="ch ch1">
+    <div class="ch1-center" id="center">
+      <div class="tagline">A 发单端 ─ C 平台规则 ─ B 接单端</div>
+      <h2>一个任务，怎么安全地<br>交到另一位同学手里</h2>
+      <div class="dock" id="via"><span id="docktag">C 平台</span></div>
+      <div class="rule" id="rule"></div>
+      <div class="note" id="note"></div>
+      <div class="steps" id="steps"></div>
+      <div class="ctl"><b id="mode">自动演示中</b><button data-ctl="next">下一步</button><button data-ctl="replay">重播</button></div>
+    </div>
+  </section>
+
+  <section class="ch ch2">
+    <div class="ch2-in" id="ch2in">
+      <h2>产品结构</h2>
+      <p style="color:var(--dim);margin-top:4px;font-size:13px">点一行，右边两台手机跳到对应状态。</p>
+      <div class="rows" id="rows">
+        <button data-row="0"><b>校内认证</b><span>认证后才能发布和接单（占位）</span></button>
+        <button data-row="1"><b>发布</b><span>禁发代考、代签到；代占座加限制</span></button>
+        <button data-row="2"><b>接单</b><span>信用分决定上限和可接类型</span></button>
+        <button data-row="3"><b>履约</b><span>接单后才解锁取件码，留凭证</span></button>
+        <button data-row="4"><b>确认放款</b><span>确认后放款（模拟），双方互评</span></button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="tabc" id="tabc"></div>
+    </div>
+  </section>
+
+  <section class="ch ch3">
+    <div class="ch3-in">
+      <div class="ch3-head">
+        <h2>我是怎么做的</h2>
+        <p>横向是真实时间，每条泳道是一个窗口。来自项目记录，截至骨架制作时；内容之后由本人筛选。</p>
+      </div>
+      <div>
+        <div class="plist" id="plist"></div>
+        <button class="replay" id="replay">回放过程</button>
+      </div>
+      <div>
+        <div class="lanes" id="lanes"></div>
+        <div class="ev" id="ev"></div>
+        <ul class="mobile-list" id="mobile-list"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/process.js"></script>
+<script>
+  (function () {
+    var Core = window.PreviewCore, Proc = window.PreviewProcess;
+    var R = 156, ch = 1;
+    var main = document.getElementById('main'), sS = document.getElementById('slot-s'), sR = document.getElementById('slot-r');
+    var stepsEl = document.getElementById('steps');
+    stepsEl.innerHTML = Core.STEPS.map(function (s, i) { return '<button data-go="' + i + '"><i>0' + (i + 1) + '</i>' + s.name + '</button>'; }).join('');
+    var demo = new Core.Demo({
+      sender: document.getElementById('sender'),
+      runner: document.getElementById('runner'),
+      via: function () { return document.getElementById('via'); },
+      minScale: .5,
+      available: function (vw, vh) {
+        if (ch === 1) return { h: vh - 44, w: (vw - R - 320) / 2 };
+        return { h: (vh - 60) * .8, w: (vw - R - 500) / 2 - 8 };
+      },
+      onFit: function (s, solo) {
+        if (solo) return;
+        var W = window.innerWidth - R, H = window.innerHeight, pw = 428 * s, ph = 800 * s;
+        var top = Math.max(14, (H - ph) / 2 + 6);
+        var pad = 16;
+        if (ch === 1) {
+          sS.style.transform = 'translate(' + pad + 'px,' + top + 'px)';
+          sR.style.transform = 'translate(' + (W - pw - pad) + 'px,' + top + 'px)';
+          var c = document.getElementById('center');
+          c.style.left = (pad + pw) + 'px';
+          c.style.width = (W - 2 * pw - 2 * pad) + 'px';
+        } else if (ch === 2) {
+          sS.style.transform = 'translate(' + (W - 2 * pw - pad - 8) + 'px,' + top + 'px)';
+          sR.style.transform = 'translate(' + (W - pw - pad) + 'px,' + top + 'px)';
+          document.getElementById('ch2in').style.width = (W - 2 * pw - pad - 16) + 'px';
+        } else {
+          sS.style.transform = 'translate(-110%,' + top + 'px)';
+          sR.style.transform = 'translate(' + (W + 40) + 'px,' + top + 'px)';
+        }
+        sS.style.opacity = sR.style.opacity = ch === 3 ? 0 : 1;
+      },
+      onStep: function (n, info) {
+        document.getElementById('rule').textContent = info.rule;
+        document.getElementById('note').textContent = info.note;
+        [].forEach.call(stepsEl.children, function (b, i) { b.classList.toggle('is-on', i === n); });
+        [].forEach.call(document.getElementById('rows').children, function (b, i) { b.classList.toggle('is-on', i === n); });
+      },
+      onMode: function (m) { document.getElementById('mode').textContent = m === 'auto' ? '自动演示中' : m === 'manual' ? '手动操作中' : '演示结束'; },
+      onFlyStart: function () { document.getElementById('via').classList.add('is-live'); document.getElementById('docktag').textContent = '校验通过'; },
+      onFlyEnd: function () { document.getElementById('via').classList.remove('is-live'); document.getElementById('docktag').textContent = 'C 平台'; }
+    });
+
+    function setCh(n) {
+      ch = n;
+      document.body.setAttribute('data-ch', n);
+      [].forEach.call(document.getElementById('chapters').children, function (b, i) { b.classList.toggle('is-on', i + 1 === n); });
+      demo.fit();
+    }
+    document.getElementById('chapters').addEventListener('click', function (e) { var b = e.target.closest('[data-ch-go]'); if (b) setCh(+b.getAttribute('data-ch-go')); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') setCh(Math.min(3, ch + 1));
+      if (e.key === 'ArrowLeft') setCh(Math.max(1, ch - 1));
+    });
+    document.getElementById('rows').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-row]');
+      if (b) { demo.takeOver(); demo.go(+b.getAttribute('data-row'), true); }
+    });
+
+    var TABS = [['痛点', '<span class="todo">待填</span>等行业调研结果。'], ['用户', '<span class="todo">待填</span>等行业调研结果。'], ['信用规则', '完成任务 → 信用提升 → 解锁更多任务。<span class="todo">待填</span>分值和门槛。'], ['异常', '超时无人接、中途取消、物品丢失。<span class="todo">待填</span>每种情况的处理。'], ['取舍', '暂不做真实支付和真后端：题面优先看产品结构和功能设计。'], ['指标', '<span class="todo">待填</span>不编数字，定义好再写。']];
+    var tabs = document.getElementById('tabs');
+    tabs.innerHTML = TABS.map(function (t, i) { return '<button data-tab="' + i + '"' + (i === 2 ? ' class="is-on"' : '') + '>' + t[0] + '</button>'; }).join('');
+    document.getElementById('tabc').innerHTML = TABS[2][1];
+    tabs.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-tab]');
+      if (!b) return;
+      [].forEach.call(tabs.children, function (c) { c.classList.remove('is-on'); });
+      b.classList.add('is-on');
+      document.getElementById('tabc').innerHTML = TABS[+b.getAttribute('data-tab')][1];
+    });
+
+    var lanes = document.getElementById('lanes');
+    var show = function (e) {
+      document.getElementById('ev').innerHTML = '<header><time>' + e.time + '</time>' + e.title + '</header><dl><dt>本人的判断 / 指令</dt><dd>' + e.ask + '</dd></dl><dl><dt>AI 做了什么</dt><dd>' + e.did + '</dd></dl><dl><dt>结果（' + e.src + '）</dt><dd>' + e.res + '</dd></dl>';
+    };
+    Proc.renderLanes(lanes, show);
+    Proc.pick(lanes, 'e4', show);
+    var pl = document.getElementById('plist');
+    pl.innerHTML = Proc.PRINCIPLES.map(function (p, i) { return '<button data-p="' + i + '"><i>原则 ' + (i + 1) + '</i>' + p.name + '</button>'; }).join('');
+    pl.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-p]');
+      if (!b) return;
+      var on = b.classList.contains('is-on');
+      [].forEach.call(pl.children, function (c) { c.classList.remove('is-on'); });
+      if (on) { Proc.highlight(lanes, null); return; }
+      b.classList.add('is-on');
+      Proc.highlight(lanes, Proc.PRINCIPLES[+b.getAttribute('data-p')].events);
+    });
+    document.getElementById('replay').addEventListener('click', function () { Proc.replay(lanes, show); });
+    document.getElementById('mobile-list').innerHTML = Proc.EVENTS.map(function (e) { return '<li><time>' + e.time + '</time>' + e.title + '</li>'; }).join('');
+
+    demo.play();
+  })();
+</script>
+</body>
+</html>
