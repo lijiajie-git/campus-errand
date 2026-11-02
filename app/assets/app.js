@@ -16,7 +16,7 @@
     var o = S.order, fee = 0, count = 0;
     D.specs.forEach(function (s) { if (o.specs[s.k]) { fee += s.fee; count++; } });
     if (o.precious) { fee += D.precious.fee; count++; }
-    var insured = !!(o.precious && o.insured), insFee = insured ? D.insurance.fee : 0;
+    var insured = !!o.insured, insFee = insured ? D.insurance.fee : 0;
     return { specs: o.specs, precious: !!o.precious, insured: insured, count: count, fee: fee, insFee: insFee, total: fee + insFee };
   }
 
@@ -24,6 +24,10 @@
   function chatDraft(me) {
     for (var i = 0; i < D.chat.length; i++) if (!CHAT.sent[i] && D.chat[i].from === me) return D.chat[i].t;
     return D.chatFallback[me];
+  }
+  function chatNext() {
+    for (var i = 0; i < D.chat.length; i++) if (!CHAT.sent[i] && D.chat[i].from) return D.chat[i].from;
+    return null;
   }
   function chatAppend(m, sender) {
     ['L', 'R'].forEach(function (id) {
@@ -52,6 +56,7 @@
       CHAT.msgs.push(card);
       chatAppend(card, null);
     });
+    applyCues();
     return true;
   }
   function chatReset() {
@@ -79,16 +84,22 @@
     return '<div class="ph off" data-ph="' + id + '"><div class="ph-cap"></div><div class="ph-frame"><div class="device device-iphone-14-pro"><div class="device-frame"><div class="device-screen"><div class="mp"><div class="mp-status"><span>9:41</span>' + SIGNAL + '</div><div class="mp-nav"><a class="nav-back" hidden data-back>' + window.MP_ICON('back', 22, 2) + '</a><span data-title></span>' + CAPSULE + '</div><div class="mp-body" data-body></div><div data-tab></div><div class="mp-home"></div></div></div></div><div class="device-stripe"></div><div class="device-header"></div><div class="device-sensors"></div><div class="device-btns"></div><div class="device-power"></div></div></div><button class="ph-over" type="button" hidden title="点进去看"><span>点进去看</span></button></div>';
   }
 
-  var IDS = ['L', 'R', 'C', 'D'], ph = {}, stageMain, sideEl, phonesEl;
+  var IDS = ['L', 'R'], ph = {}, stageMain, sideEl, phonesEl;
 
   /* ———— 从第一拍累积到当前拍 ———— */
   function beatState(stepIdx, beatIdx) {
-    var st = STEPS[stepIdx], out = { L: null, R: null, w: st.side.w, rule: st.side.rule, note: st.side.note };
+    var st = STEPS[stepIdx], out = { L: null, R: null, w: st.side.w, rule: st.side.rule, note: st.side.note, title: st.side.title, eyebrow: st.side.eyebrow, basis: st.side.basis, over: null, cta: st.cta, link: st.link };
     for (var i = 0; i <= beatIdx; i++) {
       var b = st.beats[i];
       if (b.L) out.L = b.L;
       if (b.R) out.R = b.R;
       if (b.w) out.w = b.w;
+      if (b.over) out.over = b.over;
+      if (b.title) out.title = b.title;
+      if (b.eyebrow) out.eyebrow = b.eyebrow;
+      if (b.basis !== undefined) out.basis = b.basis;
+      if (b.cta !== undefined) out.cta = b.cta;
+      if (b.link !== undefined) out.link = b.link;
       if (b.rule !== undefined) out.rule = b.rule;
       if (b.note !== undefined) out.note = b.note;
     }
@@ -99,18 +110,18 @@
   function layoutPhones(animate) {
     var st = STEPS[S.step], solo = innerWidth < SOLO_W;
     document.documentElement.classList.toggle('solo', solo);
-    stageMain.classList.toggle('is-four', st.layout === 4);
-    var used = st.layout === 4 ? IDS : st.layout === 2 ? ['L', 'R'] : st.layout === 1 ? [st.solo || 'L'] : [];
+    stageMain.classList.toggle('is-four', !!st.overview);
+    var used = st.layout === 2 ? ['L', 'R'] : st.layout === 1 ? [st.solo || 'L'] : [];
     if (!animate) stageMain.classList.add('no-anim');
 
     if (solo) {
-      phonesEl.classList.toggle('phones-four', st.layout === 4);
-      var four = st.layout === 4;
       var vw = document.documentElement.clientWidth;
-      var k = four ? Math.min(.62, (vw - 64) / 390) : vw / 390;
+      /* 手机放在最前面：缩到底部轨道之上能放下整屏，主按钮不被盖住 */
+      var avail = innerHeight - $('.bar').offsetHeight - $('.rail').offsetHeight - (st.layout === 2 ? 46 : 0) - 8;
+      var k = Math.min(vw / 390, Math.max(.72, avail / 762));
       var who = st.layout === 2 ? S.soloWho : st.solo;
       IDS.forEach(function (id) {
-        var on = four ? true : (st.layout === 0 ? false : id === who);
+        var on = st.layout === 0 ? false : id === who;
         ph[id].classList.toggle('off', !on);
         ph[id].style.setProperty('--k', k.toFixed(4));
         ph[id].style.setProperty('--pw', (390 * k) + 'px');
@@ -125,13 +136,7 @@
       IDS.forEach(function (id) { $('.ph-frame', ph[id]).style.transform = ''; });
       var W = stageMain.clientWidth, H = stageMain.clientHeight, pad = 32, gap = 16, m = 8;
       var pos = {}, side = {};
-      if (st.layout === 4) {
-        var top = 78;
-        var k4 = Math.min(1, (W - 2 * pad - 3 * gap) / (4 * PW), (H - top - CAP - m) / PH);
-        var x0 = (W - (4 * PW * k4 + 3 * gap)) / 2;
-        IDS.forEach(function (id, i) { pos[id] = { x: x0 + i * (PW * k4 + gap), y: top + CAP, k: k4 }; });
-        side = { left: Math.max(pad, x0), top: 10, width: W - 2 * Math.max(pad, x0), height: top - 12 };
-      } else if (st.layout === 2) {
+      if (st.layout === 2) {
         var minSide = 300, k2 = Math.min(1, (H - CAP - m * 2) / PH, (W - 2 * pad - minSide - 2 * gap) / (2 * PW));
         var pw = PW * k2, sw = Math.min(W - 2 * pad - 2 * pw - 2 * gap, 560);
         var gx = (W - (2 * pw + sw + 2 * gap)) / 2, y = (H - PH * k2 + CAP) / 2;
@@ -139,7 +144,7 @@
         side = { left: gx + pw + gap, top: 0, width: sw, height: H };
       } else if (st.layout === 1) {
         var k1 = Math.min(1, (H - CAP - m * 2) / PH), p1 = PW * k1;
-        var s1 = Math.min(W - 2 * pad - p1 - 56, 640);
+        var s1 = Math.min(W - 2 * pad - p1 - 56, st.sideW || 480);
         var gx1 = (W - (p1 + s1 + 56)) / 2, y1 = (H - PH * k1 + CAP) / 2;
         pos[st.solo || 'L'] = { x: gx1, y: y1, k: k1 };
         side = { left: gx1 + p1 + 56, top: 0, width: s1, height: H };
@@ -181,6 +186,49 @@
     var bottom = $('[data-bottom]', el);
     if (bottom) bottom.scrollTop = bottom.scrollHeight;
     countUp(el);
+    applyCues();
+  }
+
+  /* ———— 预交互：下一步提示、因果预告、说明联动。只在 steps.js 里声明 ———— */
+  function cueEls(o) {
+    var root = o.who === 'side' ? sideEl : ph[o.who];
+    if (!root || root.classList.contains('off')) return [];
+    return $$(o.sel, root);
+  }
+  function applyCues() {
+    if (!sideEl) return;
+    $$('.cue', $('#demo')).forEach(function (el) { el.classList.remove('cue'); el.removeAttribute('data-cue'); el.removeAttribute('data-cue-pos'); });
+    if (S.auto) return;
+    var nextChat = chatNext();
+    (beatState(S.step, S.beat).cta || []).forEach(function (c) {
+      if ((c.turn && nextChat !== c.who) || (c.done && nextChat)) return;
+      if (c.unless && cueEls({ who: c.who, sel: c.unless }).length) return;
+      var el = cueEls(c)[0];
+      if (!el) return;
+      el.classList.add('cue');
+      if (c.label) el.setAttribute('data-cue', c.label);
+      if (c.pos) el.setAttribute('data-cue-pos', c.pos);
+    });
+  }
+  function clearFx() {
+    $$('.fx-target', $('#demo')).forEach(function (el) { el.classList.remove('fx-target'); el.removeAttribute('data-fx-note'); });
+  }
+  function showFx(list) {
+    (list || []).forEach(function (o) {
+      cueEls(o).forEach(function (el, i) {
+        el.classList.add('fx-target');
+        if (o.note && i === 0) el.setAttribute('data-fx-note', o.note);
+      });
+    });
+  }
+  function onHover(e) {
+    clearFx();
+    var t = e.target, bs = beatState(S.step, S.beat);
+    if (t.closest('.st-rule, .chain')) { showFx(bs.link); return; }
+    if (S.auto) return;
+    (bs.cta || []).forEach(function (c) {
+      if (c.affects && cueEls(c).some(function (el) { return el.contains(t); })) showFx(c.affects);
+    });
   }
 
   function countUp(root) {
@@ -203,15 +251,15 @@
   function renderSide(fresh, bs) {
     var st = STEPS[S.step], s = st.side;
     var w = bs.w ? WIDGETS[bs.w[0]](bs.w[1] || {}) : '';
-    var html = '<div class="eyebrow">' + s.eyebrow + '</div>' +
-      (s.title ? '<h2>' + s.title + '</h2>' : '') +
-      (bs.rule ? '<div class="st-rule">' + bs.rule + '</div>' : '') +
+    var html = '<div class="eyebrow">' + bs.eyebrow + '</div>' +
+      (bs.title ? '<h2>' + bs.title + '</h2>' : '') +
+      (bs.rule ? '<div class="st-rule' + (bs.link ? ' has-link' : '') + '">' + bs.rule + '</div>' : '') +
       (bs.note ? '<div class="st-note">' + bs.note + '</div>' : '') + w +
-      (s.foot ? '<div class="st-foot">' + s.foot + '</div>' : '');
+      (s.foot ? '<div class="st-foot">' + s.foot + '</div>' : '') +
+      (bs.basis ? window.BASIS_HTML(bs.basis) : '');
     if (sideEl.dataset.html === html) return;
     sideEl.dataset.html = html;
     sideEl.innerHTML = html;
-    sideEl.classList.toggle('side-four', st.layout === 4);
     if (fresh && !reduced) { sideEl.classList.remove('side-fade'); void sideEl.offsetWidth; sideEl.classList.add('side-fade'); }
   }
 
@@ -230,11 +278,13 @@
     el.dataset.mode = m;
     el.textContent = m === 'auto' ? '自动演示中' : m === 'manual' ? '手动操作中' : '演示结束';
     $('#auto-btn').textContent = m === 'auto' ? '暂停' : '继续自动';
+    applyCues();
   }
 
   /* ———— 进入某个状态 ———— */
   function apply(prevStep) {
     var st = STEPS[S.step], b = st.beats[S.beat], bs = beatState(S.step, S.beat);
+    if (b.order && S.auto) Object.keys(b.order).forEach(function (k) { S.order[k] = b.order[k]; });
     var layoutChanged = S.lastLayout !== st.layout + '|' + (st.solo || '');
     var freshStep = prevStep !== S.step;
     S.lastLayout = st.layout + '|' + (st.solo || '');
@@ -242,27 +292,19 @@
     if (b.focus) S.soloWho = b.focus;
     else if (freshStep && st.layout === 2 && !b.focus) S.soloWho = 'L';
 
-    renderSide(freshStep, bs);
-    if (st.layout === 4) {
-      st.four.forEach(function (f, i) {
-        var id = IDS[i];
-        renderPhone(id, f.s);
-        var cap = $('.ph-cap', ph[id]);
-        cap.innerHTML = '<b>' + f.cap + '</b>';
-        var ov = $('.ph-over', ph[id]);
-        ov.hidden = false; ov.dataset.goto = f.go;
-      });
-    } else {
-      IDS.forEach(function (id) {
-        $('.ph-over', ph[id]).hidden = true;
-        var who = D.who[id];
-        if (who) $('.ph-cap', ph[id]).innerHTML = '<b>' + who.role + ' · ' + who.name + '</b>';
-      });
-      if (st.layout > 0) { renderPhone('L', bs.L); renderPhone('R', bs.R); }
-    }
+    renderSide(freshStep || !!b.over, bs);
+    IDS.forEach(function (id, i) {
+      var f = bs.over && bs.over[i], who = D.who[id], ov = $('.ph-over', ph[id]);
+      ov.hidden = !f;
+      if (f) ov.dataset.goto = f.go;
+      $('.ph-cap', ph[id]).innerHTML = '<b>' + (f ? f.cap : who.role + ' · ' + who.name) + '</b>';
+    });
+    if (st.layout > 0) { renderPhone('L', bs.L); renderPhone('R', bs.R); }
     layoutPhones(true);
     if (st.id === 'chat') chatSync();
     renderRail();
+    clearFx();
+    applyCues();
     if (b.toast) setTimeout(function () { toast(b.toast[0], b.toast[1]); }, 120);
     if (b.fx === 'fly') { try { fly(layoutChanged ? 480 : 40); } catch (e) { console.error(e); } }
     if (b.fx === 'zoomcard') { try { zoomCard(); } catch (e) { console.error(e); } }
@@ -383,18 +425,21 @@
   /* ———— 点击 ———— */
   function bindStage() {
     var demo = $('#demo');
-    demo.addEventListener('pointerdown', function (e) {
+    /* 只有点击才转手动；鼠标移动、滚动、触屏划动都不打断自动演示 */
+    demo.addEventListener('click', function (e) {
       if (e.target.closest('[data-ctl="auto"],[data-ctl="replay"]')) return;
       if (S.auto) takeOver();
     });
+    demo.addEventListener('mouseover', onHover);
+    demo.addEventListener('mouseleave', clearFx);
     document.addEventListener('click', function (e) {
       var t = e.target.closest && e.target;
       if (!t) return;
       var n;
       /* 总览：整台手机和标题都能点 */
       var inPhone = t.closest('.ph');
-      if (inPhone && STEPS[S.step].layout === 4) {
-        var f4 = STEPS[S.step].four[IDS.indexOf(inPhone.dataset.ph)];
+      if (inPhone && STEPS[S.step].overview) {
+        var f4 = beatState(S.step, S.beat).over[IDS.indexOf(inPhone.dataset.ph)];
         takeOver(); goTo(idxOf(f4.go));
         return;
       }
@@ -407,7 +452,7 @@
         takeOver();
         var O = S.order;
         if (n.dataset.spec) O.specs[n.dataset.spec] = O.specs[n.dataset.spec] ? 0 : 1;
-        else if (n.hasAttribute('data-prec')) { O.precious = O.precious ? 0 : 1; O.insured = O.precious; }
+        else if (n.hasAttribute('data-prec')) O.precious = O.precious ? 0 : 1;
         else O.insured = O.insured ? 0 : 1;
         var who = n.closest('[data-ph]').dataset.ph;
         renderPhone(who, beatState(S.step, S.beat)[who]);
@@ -420,7 +465,8 @@
         if (!phone) return;
         var p = n.dataset.nav.split('|'), id = phone.dataset.ph;
         takeOver();
-        if (STEPS[S.step].layout === 4) { goTo(idxOf(p[0] === 'me' ? 'settle' : p[0] === 'hall' ? 'hall' : p[0] === 'circle' ? 'circle' : 'home')); return; }
+        /* 圈子这一步提交举报：走到最后一拍，提示也就结束了 */
+        if (n.hasAttribute('data-next') && STEPS[S.step].id === 'circle') { goTo(S.step, STEPS[S.step].beats.length - 1); return; }
         S.free[id] = [p[0], JSON.parse(p[1] || '{}')];
         renderPhone(id, null);
         if (n.hasAttribute('data-next')) toast(id, '已提交举报');
@@ -474,23 +520,29 @@
     });
   }
 
-  /* ———— 审题 ———— */
+  /* ———— 审题：三种笔法，每一笔让右边长出一行 ———— */
   var briefTimers = [];
   function renderBrief() {
     var B = D.brief;
     var paras = B.paper.map(function (p) {
-      return '<p>' + p.replace(/\[\[(\w+)\|(.+?)\]\]/g, '<em data-k="$1">$2</em>') + '</p>';
+      return '<p>' + p.replace(/\[\[(\w+)\|(.*?)\]\]/g, function (m, k, t) {
+        var mark = B.marks.filter(function (x) { return x.k === k; })[0];
+        return '<em class="pen-' + mark.pen + '" data-k="' + k + '">' + t + '</em>';
+      }) + '</p>';
     }).join('');
-    var notes = Object.keys(B.notes).map(function (k) { return '<div class="pn" data-n="' + k + '">' + B.notes[k] + '</div>'; }).join('');
+    var notes = B.marks.map(function (m) { return '<div class="pn" data-n="' + m.k + '">' + m.note + '</div>'; }).join('');
     var margin = B.margin.replace(/，不做/, '，<u>不做</u>');
-    var hl = B.highlights.map(function (h, i) { return '<button class="hl" data-goto="' + h.go + '"><i>' + (i + 1) + '</i><div><b>' + h.h + '</b><span>' + h.p + '</span></div></button>'; }).join('');
+    var pains = B.pains.map(function (p) {
+      return '<button class="sol" data-grow="' + p.id + '" data-goto="' + p.go + '"><span class="sol-p">' + p.pain + '</span><i>→</i><span class="sol-s"><b>' + p.name + '</b>' + p.how + '</span></button>';
+    }).join('');
+    var scope = B.scope.map(function (r) { return '<div class="scp" data-grow="' + r.id + '"><b>' + r.k + '</b><span>' + r.t + '</span></div>'; }).join('');
     $('#brief').innerHTML = '<div class="paper"><button class="paper-skip" id="skip">' + B.skip + '</button><div class="paper-g"><div class="paper-text"><h3>' + B.paperTitle + '</h3>' + paras + '<div class="paper-margin">' + margin + '</div></div><div class="paper-notes">' + notes + '</div></div><svg class="paper-svg"></svg></div>' +
-      '<div class="sum"><div class="eyebrow">' + B.eyebrow + '</div><h1>' + D.oneLine + '</h1><h4>' + B.highlightsTitle + '</h4>' + hl + '<div class="parts"><h4>' + B.partsTitle + '</h4><p>' + B.parts.join(' · ') + '</p></div><div class="cta"><button class="cta-1" id="cta-auto">' + B.ctaAuto + '</button><button class="cta-2" id="cta-free">' + B.ctaFree + '</button><small>' + B.ctaAutoNote + '</small></div></div>';
+      '<div class="sum"><h1>' + D.oneLine + '</h1><h4>' + B.painTitle + '</h4><div class="sols">' + pains + '</div><h4>' + B.scopeTitle + '</h4><div class="scps">' + scope + '</div><div class="cta"><button class="cta-1" id="cta-auto">' + B.ctaAuto + '</button><button class="cta-2" id="cta-free">' + B.ctaFree + '</button><small>' + B.ctaAutoNote + '</small></div><p class="res-line" data-grow="res">' + B.researchLine + ' <a href="#research">' + B.researchLink + '</a></p></div>';
     $('#skip').addEventListener('click', function () { finishBrief(); });
     $('#cta-auto').addEventListener('click', function () {
       finishBrief();
-      S.free = {}; S.step = 0; S.beat = 0; S.lastLayout = null;
-      apply(-1); play();
+      S.free = {}; S.step = 0; S.beat = 0; S.lastLayout = null; resetOrder();
+      play(); apply(-1);
       $('#demo').scrollIntoView();
     });
     $('#cta-free').addEventListener('click', function () {
@@ -501,38 +553,46 @@
   }
   /* 手画的圈：两段贝塞尔，首尾略微错开 */
   function scribble(x, y, w, h, seed) {
-    var rx = w / 2 + 6, ry = h / 2 + 3, cx = x + w / 2, cy = y + h / 2, j = (seed % 3 - 1) * 1.2;
+    var rx = w / 2 + 3, ry = h / 2 + 3, cx = x + w / 2, cy = y + h / 2, j = (seed % 3 - 1) * 1.2;
     return 'M' + (cx - rx * .75) + ' ' + (cy - ry * .85 + j) +
       'C' + (cx - rx * .1) + ' ' + (cy - ry * 1.35) + ' ' + (cx + rx * 1.05) + ' ' + (cy - ry * 1.15 + j) + ' ' + (cx + rx * 1.02) + ' ' + cy +
       'C' + (cx + rx * 1) + ' ' + (cy + ry * 1.2) + ' ' + (cx - rx * .7) + ' ' + (cy + ry * 1.3 - j) + ' ' + (cx - rx * 1.02) + ' ' + (cy + ry * .1) +
       'C' + (cx - rx * 1.1) + ' ' + (cy - ry * .6) + ' ' + (cx - rx * .55) + ' ' + (cy - ry * 1.05) + ' ' + (cx - rx * .1) + ' ' + (cy - ry * 1.12);
   }
+  function penPath(pen, x, y, w, h, seed) {
+    if (pen === 'strike') { var m = y + h / 2 + 1; return 'M' + (x + 2) + ' ' + (m + 1) + 'Q' + (x + w / 2) + ' ' + (m - 2) + ' ' + (x + w - 2) + ' ' + (m + .5) + 'M' + (x + 3) + ' ' + (m + 3) + 'L' + (x + w - 4) + ' ' + (m + 2.500); }
+    if (pen === 'caret') { var cx = x + w / 2, b = y + h + 1; return 'M' + (cx - 6) + ' ' + (b + 3) + 'L' + cx + ' ' + (b - 7) + 'L' + (cx + 6) + ' ' + (b + 3); }
+    return scribble(x, y, w, h, seed);
+  }
   function drawBriefMarks(instant) {
     var paper = $('.paper'), svg = $('.paper-svg');
     if (!paper) return;
     var pr = paper.getBoundingClientRect(), notesBox = $('.paper-notes').getBoundingClientRect();
-    /* 旋转角很小，坐标误差可以忽略 */
-    var B = D.brief, y = 0, paths = '';
-    var items = $$('em[data-k]', paper).map(function (em) { return { k: em.dataset.k, r: em.getClientRects()[0] || em.getBoundingClientRect(), em: em }; }).sort(function (a, b) { return a.r.top - b.r.top; });
+    var y = 0, paths = '';
+    var items = $$('em[data-k]', paper).map(function (em) { return { k: em.dataset.k, r: em.getClientRects()[0] || em.getBoundingClientRect() }; }).sort(function (a, b) { return Math.round(a.r.top / 6) - Math.round(b.r.top / 6) || b.r.left - a.r.left; });
+    var penOf = {};
+    D.brief.marks.forEach(function (m) { penOf[m.k] = m.pen; });
     items.forEach(function (it, i) {
-      var note = $('[data-n="' + it.k + '"]', paper);
-      var h = note.offsetHeight || 22;
+      var note = $('[data-n="' + it.k + '"]', paper), h = note.offsetHeight || 22;
       var want = it.r.top + it.r.height / 2 - notesBox.top - h / 2;
       var top = Math.max(want, y);
       note.style.top = top + 'px';
       y = top + h + 6;
       var nx = notesBox.left - pr.left + (innerWidth < SOLO_W ? 10 : 20), ny = top + notesBox.top - pr.top + h / 2;
-      var ex = it.r.right - pr.left + 6, ey = it.r.top - pr.top + it.r.height / 2;
-      paths += '<path pathLength="1" class="off" data-c="' + it.k + '" d="' + scribble(it.r.left - pr.left, it.r.top - pr.top, it.r.width, it.r.height, i) + '"/>' +
-        '<path pathLength="1" class="off" data-l="' + it.k + '" d="M' + ex + ' ' + ey + 'Q' + (ex + nx) / 2 + ' ' + (ey + ny) / 2 + ' ' + nx + ' ' + ny + '" style="stroke-width:1;opacity:.55"/>';
+      /* 同一行右边还有别的笔迹时，引线从圈底出发，不穿过它 */
+      var blocked = items.some(function (o) { return o !== it && Math.abs(o.r.top - it.r.top) < 6 && o.r.left > it.r.left; });
+      var ex = blocked ? it.r.left - pr.left + it.r.width / 2 : it.r.right - pr.left + 4;
+      var ey = blocked ? it.r.bottom - pr.top + 5 : it.r.top - pr.top + it.r.height / 2;
+      var bend = (ex + nx) / 2 + ' ' + (Math.abs(ny - ey) < 2 ? ey : (ey + ny) / 2 - 8);
+      paths += '<path pathLength="1" class="off" data-c="' + it.k + '" d="' + penPath(penOf[it.k], it.r.left - pr.left, it.r.top - pr.top, it.r.width, it.r.height, i) + '"/>' +
+        '<path pathLength="1" class="off pen-lead" data-l="' + it.k + '" d="M' + ex + ' ' + ey + 'Q' + bend + ' ' + nx + ' ' + ny + '"/>';
     });
     svg.innerHTML = paths;
     if (instant || S.briefDone) showAllMarks();
   }
   function showAllMarks() {
     $$('.paper-svg path').forEach(function (p) { p.style.transition = 'none'; p.classList.remove('off'); });
-    $$('.pn').forEach(function (n) { n.classList.remove('off'); });
-    var m = $('.paper-margin'); if (m) m.classList.remove('off');
+    $$('.pn, [data-grow], .paper-margin').forEach(function (n) { n.classList.remove('off'); });
   }
   function finishBrief() {
     S.briefDone = true;
@@ -540,20 +600,22 @@
     showAllMarks();
     var skip = $('#skip'); if (skip) skip.classList.add('done');
   }
+  function grow(id) { var el = $('[data-grow="' + id + '"]'); if (el) el.classList.remove('off'); }
   function playBrief() {
     if (reduced) { finishBrief(); return; }
-    $$('.pn').forEach(function (n) { n.classList.add('off'); });
-    $('.paper-margin').classList.add('off');
-    var order = D.brief.order, gap = 1050, t = 500;
-    order.forEach(function (k, i) {
+    $$('.pn, [data-grow], .paper-margin').forEach(function (n) { n.classList.add('off'); });
+    var B = D.brief, gap = 1300, t = 400;
+    B.marks.forEach(function (m, i) {
       briefTimers.push(setTimeout(function () {
-        var c = $('[data-c="' + k + '"]'), l = $('[data-l="' + k + '"]'), n = $('[data-n="' + k + '"]');
+        var c = $('[data-c="' + m.k + '"]'), l = $('[data-l="' + m.k + '"]'), n = $('[data-n="' + m.k + '"]');
         if (c) c.classList.remove('off');
-        briefTimers.push(setTimeout(function () { if (l) l.classList.remove('off'); if (n) n.classList.remove('off'); }, 380));
+        briefTimers.push(setTimeout(function () { if (l) l.classList.remove('off'); if (n) n.classList.remove('off'); grow(m.grow); }, 450));
       }, t + i * gap));
     });
-    briefTimers.push(setTimeout(function () { $('.paper-margin').classList.remove('off'); }, t + order.length * gap + 200));
-    briefTimers.push(setTimeout(finishBrief, t + order.length * gap + 1300));
+    var end = t + B.marks.length * gap;
+    briefTimers.push(setTimeout(function () { $('.paper-margin').classList.remove('off'); grow(B.marginGrow); }, end));
+    briefTimers.push(setTimeout(function () { grow('res'); }, end + 1000));
+    briefTimers.push(setTimeout(finishBrief, end + 1500));
   }
 
   /* ———— 启动 ———— */

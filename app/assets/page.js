@@ -23,12 +23,24 @@ window.PAGE_EXTRAS = function () {
       '<div class="two"><div><h3>' + P.moreTitle + '</h3>' + plainList(P.more) + '</div><div><h3>' + P.metricTitle + '</h3>' + plainList(P.metrics) + '</div></div></div>';
   }
 
+  /* ———— 调研依据 ———— */
+  function researchHTML() {
+    var R0 = window.RESEARCH;
+    if (!R0) return '';
+    return '<h3 id="research">' + R0.title + '</h3><p class="res-speed">' + R0.speed + '</p><ul class="plain res-limits">' + R0.limits.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul>' +
+      '<div class="res-g">' + R0.groups.map(function (g) {
+        return '<div><h4>' + g.h + '</h4><ul class="plain">' + g.points.map(function (p) {
+          return '<li>' + p.t + (p.links.length ? '<div class="res-src">' + p.links.map(window.SRC_LINK).join('、') + '</div>' : '') + '</li>';
+        }).join('') + '</ul></div>';
+      }).join('') + '</div>';
+  }
+
   /* ———— Scope ———— */
   var C = window.SCOPE;
   if (C) {
     $('#scope').innerHTML = '<div class="wrap"><div class="sec-no">' + C.no + '</div><h2>' + C.title + '</h2><p class="lede">' + C.lede + '</p>' +
       '<h3>' + C.screensTitle + '</h3>' + table(['界面', '内容', '来源'], C.screens) +
-      '<div class="two"><div><h3>' + C.notTitle + '</h3>' + plainList(C.not) + '</div><div><h3>' + C.assumeTitle + '</h3><ul class="plain">' + C.assume.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul></div></div>' +
+      researchHTML() + '<div class="two"><div><h3>' + C.notTitle + '</h3>' + plainList(C.not) + '</div><div><h3>' + C.assumeTitle + '</h3><ul class="plain">' + C.assume.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul></div></div>' +
       '<details><summary>' + C.phonesTitle + '</summary>' + table(['场景', '手机数', '为什么'], C.phones) + '</details></div>';
   }
 

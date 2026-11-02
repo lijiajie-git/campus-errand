@@ -73,7 +73,7 @@
       '<div class="bc-m"><b>本批 ' + b.items + ' 件</b><span>' + b.people + ' 位同学</span><strong>' + money(b.fee) + '</strong></div>' +
       '<div class="rt"><i class="qi">起</i>' + D.station + '</div><div class="rt"><i class="zh">终</i>' + D.area + '</div>' +
       '<div class="bc-p"><div class="bc-pt">' + ic('lock', 14) + '抢到后可见</div><div class="bc-pr"><label>取件码</label>' + mz('2-4-6001', opt.scan && .5) + '<label>门牌</label>' + mz('A101', opt.scan && 1) + '</div><div class="bc-pr"><label>手机号</label>' + mz('138****0000', opt.scan && 1.5) + '<label>商品</label>' + mz('连帽卫衣', opt.scan && 2) + '</div></div>' +
-      '<div class="tags"><span class="tag">含 1 件贵重 · 当面交接 · ' + (order().insured ? '已投保' : '未投保') + '</span><span class="tag tag_gray">需信用 ≥ ' + b.need + '</span></div>' +
+      '<div class="tags"><span class="tag">含 1 件贵重 · 当面交接 · ' + (order().insured ? '已投保' : '保险自愿') + '</span><span class="tag tag_gray">需信用 ≥ ' + b.need + '</span></div>' +
       (opt.foot === false ? '' : '<div class="bc-f"><small>' + b.feeNote + '</small><a class="pill" data-next data-free-goto="grab">抢这批</a></div>') + '</div>';
   }
   function miniBatch(b, unlocked) {
@@ -135,21 +135,21 @@
         return '<div class="sp' + (on ? ' sp-on' : '') + '" role="button" tabindex="0" data-spec="' + s.k + '"><b>' + s.k + '件</b><p>¥' + s.fee + '</p><small>' + s.d + '</small>' + (on ? '<em>×1</em>' : '') + '</div>';
       }).join('');
       var p = D.precious, ins = D.insurance;
-      var insBox = !o.precious ? '' : '<div class="ins' + (o.insured ? '' : ' ins-off') + '" role="button" tabindex="0" data-ins><div class="ins-h"><i class="' + (o.insured ? 'wechecked' : 'unchecked') + '">' + (o.insured ? ic('check', 13, 3) : '') + '</i><b>' + ins.name + '</b><span>+¥' + ins.fee + '</span></div><p>' + (o.insured ? '贵重档默认勾选 · 申报价值 ' + p.value + '（假设）' : '没买保险的贵重件，丢了只按平台限额赔（假设）') + '</p><small>' + ins.note + '</small></div>';
+      var insBox = '<div class="ins' + (o.insured ? ' in' : ' ins-off') + '" role="button" tabindex="0" data-ins><div class="ins-h"><i class="' + (o.insured ? 'wechecked' : 'unchecked') + '">' + (o.insured ? ic('check', 13, 3) : '') + '</i><b>' + ins.name + '</b><span>+¥' + ins.fee + '</span></div><p>' + ins.tag + ' · 最高赔 ' + ins.limit + ' · ' + (o.insured ? ins.on : ins.off) + '</p><small>' + ins.note + '</small></div>';
       var payBtn = o.count ? '<a class="pay-btn" data-next data-jump="hall:1" data-fly-src>发布到大厅</a>' : '<a class="pay-btn pay-off" data-toast="先选一个规格">请选择规格</a>';
       return { title: '代取快递', back: true, html: '<div class="mp-view"><div class="scroll grow pad"><div class="spgrid">' + spec + '</div><div class="sp sp-wide' + (o.precious ? ' sp-on' : '') + '" role="button" tabindex="0" data-prec><div><b>' + p.k + '</b><small>' + p.d + '</small></div><p>¥' + p.fee + '</p>' + (o.precious ? '<em>×1</em>' : '') + '</div>' + insBox + '<div class="card mt0 f-compact"><div class="f"><label>送到</label><span>' + D.room + '</span></div><div class="f"><label>备注</label><span class="f-ph">手机请当面交给我</span></div></div></div><div class="pay"><div><small>' + (o.insFee ? '合计（含保费 ¥' + o.insFee + '）' : '合计') + '</small><b data-total>' + money(o.total) + '</b></div>' + payBtn + '</div></div>' };
     },
 
     myorder: function (a) {
       var taken = a.st === 'taken', o = order();
-      return { title: '我的订单', tab: 1, html: '<div class="mp-view pad"><div class="stat-head ' + (taken ? 'in' : '') + '"><h3>' + (taken ? '已被接单' : '等待接单') + '</h3><p>' + (taken ? '小周抢到了这批，门牌和取件码只给小周看' : '已和同区的件打包成批，大厅只露脱敏信息') + '</p></div><div class="card mt0"><div class="kv"><span>我的件</span><b>' + o.count + ' 件' + (o.precious ? '，含 1 件贵重' : '') + '</b></div><div class="kv"><span>所在批次</span><b>' + D.batch.id + '</b></div><div class="kv"><span>保险</span><b class="' + (o.insured ? 'g' : '') + '">' + (o.insured ? '已投保' : '未投保') + '</b></div><div class="kv"><span>已付</span><b>' + money(o.total) + '</b></div></div>' + (taken ? '<div class="card runner in"><span class="av" style="background:#8fa6d6">周</span><div><b>小周</b><p>本校实名 · 信用 82</p></div><a class="pill pill-line" data-goto="chat">聊天</a></div>' : '') + '<div class="note-card">' + (taken ? '费用先托管，你确认收到后才结算' : '费用先托管（模拟）。没人抢可以随时取消') + '</div></div>' };
+      return { title: '我的订单', tab: 1, html: '<div class="mp-view pad"><div class="stat-head ' + (taken ? 'in' : '') + '"><h3>' + (taken ? '已被接单' : '等待接单') + '</h3><p>' + (taken ? '小周抢到了这批，门牌和取件码只给小周看' : '已和同区的件打包成批，大厅只露脱敏信息') + '</p></div><div class="card mt0"><div class="kv"><span>我的件</span><b>' + o.count + ' 件' + (o.precious ? '，含 1 件贵重' : '') + '</b></div><div class="kv"><span>所在批次</span><b>' + D.batch.id + '</b></div><div class="kv"><span>保险</span><b class="' + (o.insured ? 'g' : '') + '">' + (o.insured ? '已投保' : '没买（自愿）') + '</b></div><div class="kv"><span>已付</span><b>' + money(o.total) + '</b></div></div>' + (taken ? '<div class="card runner in"><span class="av" style="background:#8fa6d6">周</span><div><b>小周</b><p>本校实名 · 信用 82</p></div><a class="pill pill-line" data-goto="chat">聊天</a></div>' : '') + '<div class="note-card">' + (taken ? '费用先托管，你确认收到后才结算' : '费用先托管（模拟）。没人抢可以随时取消') + '</div></div>' };
     },
 
     /* ———— 大厅 ———— */
     hall: function (a) {
       var b = D.batch;
       var fresh = a.fresh !== 0;
-      var sheet = a.sheet ? '<div class="sheet"><div class="sheet-mask"></div><div class="sheet-box"><div class="sheet-h"><b>确认抢这批</b></div><div class="check-row">' + ic('check', 16, 2.6) + '本校实名</div><div class="check-row">' + ic('check', 16, 2.6) + '信用 ' + D.credit.before + ' ≥ ' + b.need + '，可抢 ' + D.credit.capBefore + ' 件以内（门槛是假设）</div><div class="check-row">' + ic('check', 16, 2.6) + '贵重件' + (order().insured ? '已投保' : '未投保') + '，需当面交接</div><div class="sheet-sum"><span>本批 ' + b.items + ' 件</span><b>' + money(b.fee) + '</b></div>' + btn('确认抢批') + '</div></div>' : '';
+      var sheet = a.sheet ? '<div class="sheet"><div class="sheet-mask"></div><div class="sheet-box"><div class="sheet-h"><b>确认抢这批</b></div><div class="check-row">' + ic('check', 16, 2.6) + '本校实名</div><div class="check-row">' + ic('check', 16, 2.6) + '信用 ' + D.credit.before + ' ≥ ' + b.need + '，可抢 ' + D.credit.capBefore + ' 件以内（门槛是假设）</div><div class="check-row">' + ic('check', 16, 2.6) + '含贵重件，需当面交接' + (order().insured ? '，已投保' : '') + '</div><div class="sheet-sum"><span>本批 ' + b.items + ' 件</span><b>' + money(b.fee) + '</b></div>' + btn('确认抢批') + '</div></div>' : '';
       var main = fresh ? batchCard({ cls: a.fresh === 1 ? 'land' : a.fresh === 2 ? 'bc-focus' : '', attr: ' data-fly-dst', scan: a.fresh === 2 }) : '';
       return {
         title: '订单', tab: 1, html: '<div class="mp-view"><div class="seg"><span class="seg-on">全部订单</span><a ' + nav('myorder', { st: 'taken' }) + '>我的订单</a><a data-goto="pick">我帮助的</a></div><div class="subseg"><span class="on">待抢</span><span data-toast="演示只有待抢这一档">代取</span><span data-toast="演示只有待抢这一档">跑腿</span><span data-toast="演示只有待抢这一档">已完成</span></div><div class="scroll grow pad8">' + main + miniBatch(D.otherBatches[0]) + miniBatch(D.otherBatches[1], a.unlock) + '<div class="mp-safe"></div></div>' + sheet + '</div>'
@@ -263,7 +263,7 @@
       var C = D.compare, A = C.one, B = C.batch;
       var one = ''; for (var i = 0; i < A.trips; i++) one += '<i class="cb cb-g" style="left:' + i * 20 + '%;width:calc(20% - 3px);animation-delay:' + (.2 + i * .42) + 's"><u>第 ' + (i + 1) + ' 趟</u></i>';
       function row(k, a, b) { return '<tr><th>' + k + '</th><td>' + a + '</td><td class="hi">' + b + '</td></tr>'; }
-      return '<div class="cmp"><div class="cmp-l"><h2>' + C.title + '</h2><div class="cmp-chart"><div class="cmp-row"><label>' + A.name + '</label><div class="cmp-t">' + one + '</div></div><div class="cmp-row"><label>' + B.name + '</label><div class="cmp-t"><i class="cb cb-a" style="left:0;width:33.33%;animation-delay:2.4s"><u>1 趟带 5 件</u></i><span class="cmp-save" style="left:33.33%;right:0">' + C.saved + '</span></div></div><div class="cmp-axis"><span style="left:0">0</span><span style="left:33.33%">25 分钟</span><span style="left:100%">75 分钟</span></div></div><p class="cmp-p">' + C.plain + '</p></div><table class="cmp-tb"><thead><tr><th></th><td>' + A.name + '</td><td class="hi">' + B.name + '</td></tr></thead><tbody>' + row('趟数', A.trips, B.trips) + row('用时', A.minutes + ' 分钟', B.minutes + ' 分钟') + row('酬金', '¥' + A.pay, '¥' + B.pay) + row('折合时薪', '¥' + A.hour, '¥' + B.hour) + '</tbody><tfoot><tr><td colspan="3">' + C.note + '<br><button class="cmp-next" data-ctl="next">接着看：抢这批 →</button></td></tr></tfoot></table></div>';
+      return '<div class="cmp"><div class="cmp-l"><h2>' + C.title + '</h2><div class="cmp-chart"><div class="cmp-row"><label>' + A.name + '</label><div class="cmp-t">' + one + '</div></div><div class="cmp-row"><label>' + B.name + '</label><div class="cmp-t"><i class="cb cb-a" style="left:0;width:33.33%;animation-delay:2.4s"><u>1 趟带 5 件</u></i><span class="cmp-save" style="left:33.33%;right:0">' + C.saved + '</span></div></div><div class="cmp-axis"><span style="left:0">0</span><span style="left:33.33%">25 分钟</span><span style="left:100%">75 分钟</span></div></div><p class="cmp-p">' + C.plain + '</p></div><table class="cmp-tb"><thead><tr><th></th><td>' + A.name + '</td><td class="hi">' + B.name + '</td></tr></thead><tbody>' + row('趟数', A.trips, B.trips) + row('用时', A.minutes + ' 分钟', B.minutes + ' 分钟') + row('酬金', '¥' + A.pay, '¥' + B.pay) + row('折合时薪', '¥' + A.hour, '¥' + B.hour) + '</tbody><tfoot><tr><td colspan="3">' + C.note + '<br><button class="cmp-next" data-ctl="next">算完账，接着抢这批 →</button></td></tr></tfoot></table></div>';
     },
     chain: function (a) {
       var n = (a && a.n) || 0, Cl = D.claim, cs = window.APP ? window.APP.claimCase() : 'normal';
@@ -280,6 +280,17 @@
     }
   };
 
+  /* 依据和链接：说明栏用，SOURCES 在 research.js */
+  function srcLink(k) {
+    var s = window.SOURCES[k];
+    return '<a class="src" href="' + s.url + '" target="_blank" rel="noopener">' + s.label + '<small>（' + s.note + '）</small></a>';
+  }
+  window.SRC_LINK = srcLink;
+  window.BASIS_HTML = function (items) {
+    return '<ul class="basis"><li class="basis-h">依据</li>' + items.map(function (b) {
+      return '<li>' + b.t + (b.links.length ? ' ' + b.links.map(srcLink).join('、') : '') + '</li>';
+    }).join('') + '</ul>';
+  };
   window.CHAT_MSG = chatMsg;
   window.SCREENS = SCREENS;
   window.WIDGETS = WIDGETS;

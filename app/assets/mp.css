@@ -349,6 +349,26 @@
 .post-f { display: flex; gap: 16px; margin-top: 7px; font-size: 13px; color: rgba(0,0,0,.45); }
 .fab { position: absolute; right: 16px; bottom: 96px; width: 50px; height: 50px; border-radius: 50%; background: #07c160; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(7,193,96,.4); }
 
+.mp [data-next], .mp [data-goto], .mp [data-nav], .mp [data-toast], .mp [data-spec], .mp [data-prec], .mp [data-ins], .mp [data-chat-send] { cursor: pointer; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .mp [data-next], .mp [data-goto], .mp [data-nav], .mp [data-toast], .mp [data-spec], .mp [data-prec], .mp [data-ins], .mp [data-chat-send] { transition: transform .12s ease-out, filter .12s ease-out; }
+  .mp [data-next]:hover, .mp [data-goto]:hover, .mp [data-nav]:hover, .mp [data-toast]:hover, .mp [data-spec]:hover, .mp [data-prec]:hover, .mp [data-ins]:hover, .mp [data-chat-send]:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .mp [data-next]:active, .mp [data-goto]:active, .mp [data-nav]:active, .mp [data-toast]:active, .mp [data-spec]:active, .mp [data-prec]:active, .mp [data-ins]:active, .mp [data-chat-send]:active { transform: scale(.98); filter: none; }
+  .svc:hover, .entry:not(.entry-main):hover, .home-batch:hover, .sp:not(.sp-on):hover { background-color: #fafbfb; }
+}
+/* 下一步提示：细环向外扩，不做发光 */
+.cue { animation: cueRing 1.9s ease-out infinite; }
+@keyframes cueRing { 0% { outline: 2px solid rgba(7,193,96,.75); outline-offset: 0; } 70%, 100% { outline: 2px solid rgba(7,193,96,0); outline-offset: 7px; } }
+.cue[data-cue] { position: relative; }
+.weui-btn.cue { overflow: visible; }
+.cue[data-cue]::before { content: attr(data-cue); position: absolute; z-index: 40; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; background: #ffb020; color: #0d1a2b; font-size: 12.500px; font-weight: 600; line-height: 22px; padding: 0 8px; border-radius: 4px; pointer-events: none; }
+.cue[data-cue-pos="left"]::before { left: auto; right: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }
+.cue[data-cue-pos="in"]::before { left: auto; right: 8px; bottom: auto; top: 6px; transform: none; }
+@media (hover: none) { .cue[data-cue]::before { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cue { animation: none; outline: 2px solid #07c160; outline-offset: 2px; } }
+/* 因果预告和说明联动：琥珀细描边 */
+.fx-target { position: relative; outline: 2px solid #ffb020; outline-offset: 2px; border-radius: 8px; }
+.fx-target[data-fx-note]::after { content: attr(data-fx-note); position: absolute; z-index: 40; right: 4px; top: 4px; white-space: nowrap; background: #ffb020; color: #0d1a2b; font-size: 12px; font-weight: 600; line-height: 20px; padding: 0 7px; border-radius: 3px; pointer-events: none; }
 .mp-toast { animation: toast 1.4s both; pointer-events: none; }
 @keyframes toast { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
 
