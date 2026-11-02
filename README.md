@@ -30,7 +30,7 @@
 
 用 Claude Code 多窗口协作，主要模型是 Claude Opus 5.5，子任务用 Sonnet 5.5。本人实际操作约 2 到 2.5 小时（取本人发消息的时间，间隔超过 10 到 15 分钟算离开）。提交记录的跨度更长，因为中间有离开和过夜，窗口也会继续运行。
 
-我的其他作品：[FDE / AI 产品作品集](https://github.com/lijiajie-git/fde-agent-portfolio)。
+我的其他作品：[字节跳动 FDE 作品集](https://github.com/lijiajie-git/fde-agent-portfolio)。
 
 全过程记录在 [CLAUDE.md](CLAUDE.md)：工作规则、判断记录（分清本人定的和 Claude 提议的）、交互记录。
 
