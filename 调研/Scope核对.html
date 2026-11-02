@@ -1,0 +1,445 @@
+<title>校园跑腿 Scope 核对</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 版式：像一张调度单。先放要定的事，再按平台流程逐环节展开。沿用作品选定的夜蓝和琥珀。 */
+:root {
+  --bg: #e9edf2; --surface: #f8fafc; --fg: #0d1a2b; --muted: #4d5d73; --line: #c6d0dc;
+  --accent: #8f5b00; --fill: #ffb020; --on-fill: #0d1a2b; --warn: #a33a1e; --soft: #dfe5ec;
+  --body: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1a2b; --surface: #14243a; --fg: #e6ebf1; --muted: #a0afc3; --line: #2c405b;
+  --accent: #ffb020; --fill: #ffb020; --on-fill: #0d1a2b; --warn: #ff8f6b; --soft: #1b2e48; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0d1a2b; --surface: #14243a; --fg: #e6ebf1; --muted: #a0afc3; --line: #2c405b;
+  --accent: #ffb020; --fill: #ffb020; --on-fill: #0d1a2b; --warn: #ff8f6b; --soft: #1b2e48; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 1120px; margin-inline: auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 56px; }
+section { display: grid; gap: 16px; min-width: 0; }
+h1 { font-size: clamp(26px, 4.4vw, 38px); line-height: 1.25; margin: 0; text-wrap: balance; }
+h2 { font-size: 22px; line-height: 1.35; margin: 0; text-wrap: balance; }
+h3 { font-size: 16px; margin: 0; }
+p { margin: 0; max-width: 72ch; }
+ul { margin: 0; padding-left: 20px; max-width: 72ch; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); margin: 0; }
+.lead { font-size: 17px; }
+.muted { color: var(--muted); }
+header { display: grid; gap: 14px; }
+nav { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; color: var(--muted); align-items: center; }
+.tag { display: inline-block; font-size: 12px; line-height: 1.5; padding: 0 6px; border-radius: 3px; white-space: nowrap; border: 1px solid transparent; }
+.you { background: var(--fill); color: var(--on-fill); }
+.prop { border-color: var(--accent); color: var(--accent); }
+.asm { border: 1px dashed var(--muted); color: var(--muted); }
+.must { background: var(--fg); color: var(--bg); }
+.can { background: var(--soft); color: var(--fg); }
+.doc { border: 1px solid var(--line); color: var(--muted); }
+.tbl { overflow-x: auto; border-top: 2px solid var(--fg); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.n { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
+td.t { font-weight: 600; min-width: 92px; }
+.flow { min-width: 860px; }
+.wide { min-width: 720px; }
+.num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+form { display: grid; gap: 0; border-top: 2px solid var(--fg); }
+fieldset { border: 0; border-bottom: 1px solid var(--line); margin: 0; padding: 14px 0; min-width: 0; display: flow-root; }
+legend { float: left; width: 40%; padding: 0 20px 0 0; }
+.opts { margin-left: 40%; }
+.q { font-weight: 600; }
+.q small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; line-height: 1.55; margin-top: 2px; }
+.opts { display: grid; gap: 6px; min-width: 0; }
+.opts label { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 14px; }
+.opts input { margin: 5px 0 0; accent-color: var(--accent); }
+.rec { color: var(--accent); font-size: 12px; white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding-top: 14px; }
+.notes { display: grid; gap: 6px; padding-top: 14px; }
+.notes label { font-size: 14px; font-weight: 600; }
+textarea { width: 100%; min-height: 76px; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+button { font: inherit; font-size: 14px; font-weight: 600; background: var(--fill); color: var(--on-fill); border: 0; border-radius: 4px; padding: 8px 16px; cursor: pointer; }
+.status { font-size: 13px; color: var(--muted); }
+.sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sheet > div { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.batch-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-weight: 600; }
+.pay { font-family: var(--mono); color: var(--accent); }
+.mono-list { list-style: none; padding: 0; margin: 0; font-size: 14px; display: grid; gap: 2px; }
+.mono-list li { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; }
+.mono-list b { font-family: var(--mono); font-weight: 500; }
+.note { border-left: 3px solid var(--fill); padding-left: 12px; max-width: 76ch; }
+.warn { color: var(--warn); font-weight: 600; }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.cols > div { display: grid; gap: 6px; align-content: start; min-width: 0; }
+@media (max-width: 760px) {
+  .wrap { gap: 44px; padding-block: 28px 56px; }
+  legend { float: none; width: 100%; padding: 0 0 8px; }
+  .opts { margin-left: 0; }
+  .sheet, .cols { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">第三版草案 · 2026-11-01 · 还没有开发，也没有同步到主窗口</p>
+  <h1>校园跑腿 Scope 核对</h1>
+  <p class="lead"><strong>一句话：</strong>外卖体验好是因为闭环，快递代取没有闭环，东西丢了商家和驿站都不管。我们用实名、托管付款、分段留证和先赔后追把它补上，再让同学一次抢一批，让跑一趟变得划算。</p>
+  <div class="legend">
+    <span><span class="tag you">你定</span> 你已明确</span>
+    <span><span class="tag prop">提议</span> 我的建议，待你定</span>
+    <span><span class="tag asm">假设</span> 数字或前提未验证</span>
+    <span><span class="tag must">必做</span> 进主演示</span>
+    <span><span class="tag can">能做</span> 有时间再做</span>
+    <span><span class="tag doc">方案</span> 只写进产品方案</span>
+  </div>
+  <nav>
+    <a href="#decide">要定的事</a><a href="#flow">全流程</a><a href="#blame">责任卡</a><a href="#highlights">亮点</a><a href="#ai">AI 怎么做</a><a href="#pickup">取件难点</a><a href="#money">商业模式</a><a href="#gaps">没查到的</a>
+  </nav>
+</header>
+
+<section id="decide">
+  <h2>先定这 12 件事</h2>
+  <p>每项选一个，再点按钮复制，贴回对话即可。选择只存在你这个浏览器里。</p>
+  <form id="f">
+    <fieldset>
+      <legend class="q">1. 主演示抢什么<small>主窗口现在写的是单件抢单，你后来提出抢批次，两边要对齐。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d1" id="d1a" value="一批 3 件"><span>抢一批，演示用 3 件 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d1" id="d1b" value="单件抢单"><span>单件抢单，批次只写进方案</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">2. 丢件谁赔<small>统一成批后，用户下单面对的是平台，只让同学赔说不过去（我的判断，不是法律意见）。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d2" id="d2a" value="平台限额先赔，再向同学追偿"><span>平台限额内先赔，再向责任同学追偿 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d2" id="d2b" value="同学直接赔，平台只提供证据"><span>同学直接赔，平台只提供证据</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">3. 保险和佣金<small>现行规定要求互联网企业代理保险业务先取得许可，非保险机构不能比价、代办、代收保费（<a href="https://www.gov.cn/zhengce/zhengceku/2020-12/14/content_5569402.htm">第二十三、六十五条</a>，不是法律意见）。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d3" id="d3a" value="跳转保险公司页面，佣金写成远期"><span>跳转保险公司页面投保，佣金写成持牌合作后的远期收入 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d3" id="d3b" value="首版就算入佣金收入"><span>首版就把佣金算进收入</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">4. 聊天记录怎么存<small>查到的最近规则是通话录音存 14 天，有纠纷延长（<a href="https://terms.alicdn.com/legal-agreement/terms/suit_bu1_other/suit_bu1_other202103081640_50589.html">淘宝闪购商家端政策</a>）。站内聊天的期限没查到。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d4" id="d4a" value="订单内聊天，限期保存，申诉才调取"><span>只在订单进行中开放，结束后限期保存（如 30 天），申诉才调取 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d4" id="d4b" value="全部封存，平台随时能看"><span>全部封存，平台随时能看</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">5. 定位<small>同学之间互相认识，实时定位比外卖骑手更敏感，也要单独同意。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d5" id="d5a" value="首版不做，用节点时间线"><span>首版不做，用节点时间线代替 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d5" id="d5b" value="做一个模拟地图"><span>做一个模拟地图</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">6. 谁抢到批<small>纯手速在美团众包催生过外挂和“单王”。美团 2025 年底被报道试行多人抢时由系统裁定，官方没有正式确认细节（<a href="https://www.36kr.com/p/3619253681648129">36 氪</a>）。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d6" id="d6a" value="短窗口加权分配"><span>点抢后开短窗口，按信用、手上未完成批数加权 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d6" id="d6b" value="先到先得"><span>先到先得</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">7. 一批怎么算钱<small>只按件数算时，1 件和 5 件的路程差不多，收入差 5 倍，小批容易没人接。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d7" id="d7a" value="底价加每件"><span>底价加每件，发单时提示凑单更便宜 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d7" id="d7b" value="只按件数"><span>只按件数</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">8. 取件时怎么防错拿<small>你说不加硬件。扫面单只用手机摄像头，和扫驿站或商家的码是两回事。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d8" id="d8a" value="手机扫面单或输尾号，再拍整批照"><span>手机扫面单或输尾号，对上清单才勾选，出站拍整批照 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d8" id="d8b" value="只拍照"><span>只拍照，流程更简单，但一次多件时防不住拿错</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">9. 代占座<small>题面点名，你也觉得不太道德。校规原文没查到，要写成产品判断。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d9" id="d9a" value="改成代排队"><span>改成代排队：真人到场，到点交接，不放东西占位 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d9" id="d9b" value="保留代占座并加限制"><span>保留代占座并加限制</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">10. 代打卡<small>论坛也是平台的一部分，明知灰色还提供地方，评审容易追问，还要多做一个论坛。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d10" id="d10a" value="和代考一起拦"><span>和代考一起拦 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d10" id="d10b" value="放论坛，平台不组织"><span>放论坛，平台不组织</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">11. 看板的定位<small>Uber 自己的问数工具也承认幻觉问题没完全解决（<a href="https://www.uber.com/blog/query-gpt/">工程博客，2024</a>）。假数据上的“AI 洞察”最容易被看成噱头。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d11" id="d11a" value="普通看板，AI 亮点放解析和评测"><span>做普通看板，AI 亮点放在解析和评测 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d11" id="d11b" value="看板加问数，作为 AI 主亮点"><span>看板加自然语言问数，作为 AI 主亮点</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="q">12. 论坛要不要做<small>两种做法都禁止代考和代打卡，发现就删帖封号。我不会写“留渠道”的方案。</small></legend>
+      <div class="opts">
+        <label><input type="radio" name="d12" id="d12a" value="首版不做论坛"><span>首版不做，省下开发时间 <span class="rec">推荐</span></span></label>
+        <label><input type="radio" name="d12" id="d12b" value="做论坛，只放失物、拼单、经验交流"><span>做论坛，只放失物、拼单、经验交流，配举报和处理规则</span></label>
+      </div>
+    </fieldset>
+    <div class="notes">
+      <label for="notes">其他想法</label>
+      <textarea id="notes" placeholder="想改的地方写这里，会一起复制"></textarea>
+    </div>
+    <div class="actions">
+      <button type="button" id="copy">复制我的选择</button>
+      <span class="status" id="status">已选 0 / 12</span>
+    </div>
+    <textarea id="out" readonly hidden aria-label="选择结果，可手动复制"></textarea>
+  </form>
+</section>
+
+<section id="flow">
+  <h2>全流程 Scope</h2>
+  <p><strong>前提：</strong>学校可进 <span class="tag you">你定</span>；驿站记录可获取，来自平台合作或报警调取 <span class="tag you">你定</span>；驿站允许一人取多件 <span class="tag asm">假设</span>。</p>
+  <div class="tbl"><table class="flow">
+    <thead><tr><th></th><th>环节</th><th>发单端</th><th>平台规则</th><th>接单端</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td class="n">01</td><td class="t">实名</td><td>本校认证一次</td><td>只有本校实名学生能发单和接单，出事能找到人</td><td>同样认证</td><td><span class="tag must">必做</span> <span class="tag you">你定</span></td></tr>
+      <tr><td class="n">02</td><td class="t">录入取件信息</td><td>粘贴短信或上传截图，可一次多件；逐字段确认</td><td>规则解析优先，解析不了转手填。取件码和单号必须能在原文找到。只收单件取件码，不收身份码</td><td></td><td><span class="tag must">必做</span> <span class="tag you">你定</span></td></tr>
+      <tr><td class="n">03</td><td class="t">填单</td><td>送达楼栋、价值档、大小和重量档、交接方式、当日或加急</td><td>代考等任务直接拦。手机、电脑、证件不接；较贵的必须当面交接。到付、要验货单独标出。超过 3 公斤或普通快递盒的（如水、油）不进普通批，走单件或更贵的价。付款托管</td><td></td><td><span class="tag must">必做</span> <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">04</td><td class="t">成批</td><td>看到“凑够几件更便宜”</td><td>按“取件点加送达区”成批，默认 5 件一批，不足也成批。过期分三段：优先可见、全部可见、加价一次；仍没人接就让发单人选退款、并入明天或自取</td><td>大厅出现批次卡</td><td><span class="tag must">必做</span> 成批 <span class="tag you">你定</span><br><span class="tag doc">方案</span> 过期规则 <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">05</td><td class="t">抢批</td><td>显示已被接单</td><td>信用决定能抢多大的批，每人同时最多持有 1 到 2 批。取件码抢到后才显示</td><td>卡片显示件数、酬金、取件点、送达区、截止时间</td><td><span class="tag must">必做</span> 抢批 <span class="tag you">你定</span><br>信用门槛 <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">06</td><td class="t">到站取件</td><td>时间线更新</td><td>到站打卡。件不在就走白跑规则。大小或重量和所选档不符的，可退回这一件，不记负面。核对方式看第 8 项</td><td>按清单取一件勾一件，出站拍整批照</td><td><span class="tag must">必做</span> <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">07</td><td class="t">配送和沟通</td><td>看节点；订单内聊天</td><td>关键凭证做成订单节点，不依赖聊天，因为同学可能转去微信私聊</td><td>按楼栋顺序送；订单内聊天</td><td><span class="tag can">能做</span> 模拟一屏 <span class="tag you">你定</span></td></tr>
+      <tr><td class="n">08</td><td class="t">交付</td><td>当面确认，或查看放置照片</td><td>每件单独确认。放货架的，放下拍照后风险转给发单人，下单时已说清</td><td>当面交或放货架拍照</td><td><span class="tag must">必做</span> <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">09</td><td class="t">结算和信用</td><td>双向互评，都提交后才公开</td><td>确认后结算给接单人。完成按批累积，权重随件数增加但有上限；事故按件记；接后放弃扣信用</td><td>看到收入和信用变化</td><td><span class="tag must">必做</span> <span class="tag you">你定</span> 按批<br>细则 <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">10</td><td class="t">异常和申诉</td><td>发起申诉</td><td>按责任卡判定，AI 只整理证据和写说明，赔钱要人工确认</td><td>可申诉</td><td><span class="tag must">必做</span> <span class="tag prop">提议</span></td></tr>
+      <tr><td class="n">11</td><td class="t">运营看板</td><td></td><td>收入、丢件率、超时率、流标率、未交付货值。假数据写明，埋一个事件（某区丢件率升高），引向调整保价要求或人工查看</td><td></td><td><span class="tag can">能做</span> <span class="tag you">你定</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="sheet">
+    <div>
+      <h3>批次卡长这样（示例，数字是假设）</h3>
+      <div class="batch-head"><span>北区 · 菜鸟驿站</span><span class="pay">13 元</span></div>
+      <p class="muted">5 件 · 最大中件 · 今日 18:00 前取 · 取件码抢到后显示</p>
+    </div>
+    <div>
+      <h3>抢到后的取件清单（货架号格式来自资料，示例）</h3>
+      <ul class="mono-list">
+        <li><b>1-2-08</b><span>3 号楼 · 当面</span></li>
+        <li><b>2-1-15</b><span>3 号楼 · 放货架</span></li>
+        <li><b>3-2-15</b><span>5 号楼 · 当面</span></li>
+      </ul>
+    </div>
+  </div>
+  <h3>拓展场景：都走单件抢单，只写进方案，主演示不变</h3>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>场景</th><th>怎么做</th><th>边界</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td class="t">代搬运</td><td>接住超限的重件和大件，按楼层和时长计价。货运平台的搬运要单独计费，特殊大件还要和司机协商（<a href="https://www.jiemian.com/article/3743259.html">界面，2019，较旧</a>），校内短距离没有这么顺手的选择。价格还没有可靠数据</td><td>搬前拍照，写明易碎件，损坏按责任卡处理；受伤怎么处理待定。进宿舍要考虑门禁，以及是否让发单人选同性接单</td><td><span class="tag you">你定</span> 场景<br><span class="tag prop">提议</span> 细则</td></tr>
+      <tr><td class="t">忘带东西代送</td><td>接现有的加急，最讲时效。美团跑腿 2023 年高考期间做过考生紧急代送（<a href="https://www.digitaling.com/projects/250949.html">只读到搜索摘要</a>），校内同学之间的数据没查到</td><td>忘带的常是电脑或证件，默认不接；确需代送的必须当面交接，不计入普通赔付。要进宿舍取的，由室友交接</td><td><span class="tag you">你定</span> 场景<br><span class="tag prop">提议</span> 细则</td></tr>
+      <tr><td class="t">校园手续代办</td><td>接单前列清单，平台给委托书模板。不少学校本来就有委托流程：<a href="https://www.tsinghua.edu.cn/jwc/info/1071/1225.htm">清华</a>办成绩单要代办者证件原件和被代办人证件复印件；<a href="https://dag.hebut.edu.cn/tzgg/50b40d2487d04a05a6135bfb57a6172b.htm">河北工业大学</a>走档可委托，要委托书和双方证件材料。本校实名正好对得上受托人</td><td>只走学校认可的委托流程。不代签名、不冒充本人、不伪造材料、不代开实习证明，这些和代考一起拦。<a href="https://m.gmw.cn/2023-07/21/content_1303449733.htm">实习证明造假</a>已有灰色代办，要明确划开。证件复印件只给接单人，办完删除。各校要求不同，接单前要查</td><td><span class="tag you">你定</span> 场景<br><span class="tag doc">方案</span> 只写进方案 <span class="tag prop">提议</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div><h3>只写进方案</h3><ul><li>外卖派单：固定学生、餐补、换班、按单量结算 <span class="tag you">你定</span></li><li>加急：加价，专人取送 <span class="tag you">你定</span></li><li>分区调度和多批运营</li><li>保险跳转和商业模式</li></ul></div>
+    <div><h3>任务边界</h3><ul><li>代考不做 <span class="tag you">你定</span>，发单和论坛都禁止，发现就删帖封号 <span class="tag prop">提议</span></li><li>代买、带饭、代排队和上面三类拓展走单件抢单</li><li>代占座、代打卡等第 9、10 项</li></ul></div>
+    <div><h3>建议不做</h3><ul><li>商家端、真实支付、真后端</li><li>实时地图</li><li>AI 判责、AI 信用分、智能调度、通用客服</li></ul></div>
+  </div>
+</section>
+
+<section id="blame">
+  <h2>责任卡</h2>
+  <p>作品里只放这张卡，不写法条。规则判定，可以解释，也可以复核。赔付限额和白跑费金额都是假设。</p>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>情况</th><th>怎么判断</th><th>谁负责</th><th>接单人</th></tr></thead>
+    <tbody>
+      <tr><td class="t">到站没件，已被取走</td><td>驿站出库时间早于接单人到站打卡</td><td>查发单人或室友是否已取；都不是就找驿站</td><td>不记负面，拿白跑费</td></tr>
+      <tr><td class="t">到站没件，没有出库记录</td><td>驿站无记录，可能未到或错放</td><td>驿站或快递方</td><td>不记负面，拿白跑费</td></tr>
+      <tr><td class="t">取了没送到</td><td>有取件核对和出库记录，没有交付记录</td><td>接单人。平台限额内先赔，再追偿</td><td>从未结算收入扣，还不上就停接单资格</td></tr>
+      <tr><td class="t">当面交付后</td><td>发单人已确认收到</td><td>责任结束</td><td>无</td></tr>
+      <tr><td class="t">放货架后丢失</td><td>放置照片和时间都在，下单时选了放货架</td><td>发单人</td><td>无</td></tr>
+      <tr><td class="t">拿错别人的件</td><td>面单和清单对不上，或事后被投诉</td><td>接单人负责送还</td><td>按件记事故</td></tr>
+      <tr><td class="t">到站发现大小或重量不符</td><td>和发单时选的档不一致</td><td>发单人。退回这一件，由发单人重新选档或自取</td><td>不记负面，拿白跑费</td></tr>
+      <tr><td class="t">代搬运时物品损坏</td><td>搬前照片和易碎声明（只写进方案）</td><td>接单人有过错的，平台限额先赔再追偿；未声明易碎的按规则减免</td><td>按件记事故。受伤怎么处理待定</td></tr>
+      <tr><td class="t">超限额或贵重件</td><td>声明价值和保单</td><td>限额内平台先赔，超出部分走发单人自己买的保险</td><td>赔偿封顶</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">这张卡回答了“怎么保证他能赔”：不用保证。用户先拿到限额内的赔付，追不回的算平台成本，由每单预留覆盖。贵重件不接，把最大损失压住。实际发生率没有数据，预留比例也还没算。</p>
+</section>
+
+<section id="highlights">
+  <h2>亮点</h2>
+  <p>筛选标准：判断不是显而易见的，能在演示里看到，并且有依据。开发量是粗估，未验证。</p>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th></th><th>亮点</th><th>为什么算</th><th>依据</th><th>开发量</th><th>风险</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td class="t">把代取补成闭环 <span class="tag you">你定</span></td><td>全题的主线，解释了后面所有设计</td><td>你的亲身观察；<a href="https://www.zhihu.com/question/421082323">同学代拿丢件</a>有一例自述。外卖校内段也有断点</td><td>靠讲清楚</td><td>证据多来自外卖</td></tr>
+      <tr><td class="n">2</td><td class="t">抢批次，信用决定能抢多大 <span class="tag you">你定</span></td><td>保留题面的接单跑腿，又有统一代取的效率；信用有真实用途</td><td>接近 <a href="https://company.instacart.com/shoppers/access-batches">Instacart 的批次和等级优先</a>；<a href="https://www.zhihu.com/question/276350214">运营者自述</a>放弃单件抢单</td><td>中</td><td>单量低时退回单件；公开先例里没查到校园版，不写成首创</td></tr>
+      <tr><td class="n">3</td><td class="t">取件解析和批次清单 <span class="tag you">你定</span></td><td>你最初的想法。把短信或截图解析成批次清单，交给接单同学，省掉手抄和逐条转发</td><td>对应下方取件难点里的“信息难录入”；具体字段要用真实短信和截图核对</td><td>小到中</td><td>只覆盖见过的格式；物品信息可能不在短信里</td></tr>
+      <tr><td class="n">4</td><td class="t">解析评测面板 <span class="tag prop">提议</span></td><td>一块成绩单：用一批标好答案的样本跑解析功能，显示每个字段对了多少、错在哪、解析不了时有没有转手填。它回答“凭什么说它能用”，最能体现 AI 应用工程能力</td><td>Uber、DoorDash、Instacart 的公开做法都有标准集评测，部分只读到摘要</td><td>中</td><td>样本是自造的，要主动写明</td></tr>
+      <tr><td class="n">5</td><td class="t">模拟丢件和证据整理 <span class="tag prop">提议</span></td><td>两台手机同时变化，因果一眼看到；展示 AI 不做决定的边界判断</td><td>没查到平台公开由大模型自主判责；<a href="https://techcrunch.com/2026/01/04/doordash-says-it-banned-driver-who-seemingly-faked-a-delivery-using-ai/">DoorDash 伪造送达照片事件</a>说明照片也不完全可靠</td><td>中</td><td>赔付规则是假设</td></tr>
+      <tr><td class="n">6</td><td class="t">带埋点事件的风险看板 <span class="tag you">你定</span></td><td>你想看赚多少钱和风险。有具体事件和动作才不空泛</td><td>见 F 文件第 5 节</td><td>小到中</td><td>假数据容易像噱头，第 11 项决定它的定位</td></tr>
+      <tr><td class="n">7</td><td class="t">校园手续代办 <span class="tag you">你定</span></td><td>只有校园才有的场景：本校实名正好对上学校的委托流程。只写进方案，不加开发量</td><td>你在本校的观察；清华、河北工业大学等有委托办理流程。需求规模没查到</td><td>只写方案</td><td>各校要求不同；要和实习造假的灰色代办划清界限</td></tr>
+    </tbody>
+  </table></div>
+  <h3>这些分别体现什么</h3>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>能力</th><th>作品里的证据</th></tr></thead>
+    <tbody>
+      <tr><td class="t">AI 应用工程</td><td>判断哪里该用 AI；结构化输出和回查原文；评测和失败样本；人工确认。评审怎么打分查不到，国内岗位要求也没查到，这是我的判断</td></tr>
+      <tr><td class="t">工程能力</td><td>两端状态联动不出错、每个异常结局都对得上、手机打开不坏、解析真能跑、能重播。题面说不必追求技术细节，所以细节放在可展开区</td></tr>
+      <tr><td class="t">业务理解</td><td>闭环洞察、用自己学校校验调研、外卖和快递分开、抢批次</td></tr>
+      <tr><td class="t">商业判断</td><td>下面那张小表，以及佣金为什么不计入首版</td></tr>
+      <tr><td class="t">和 AI 协作</td><td>多窗口并行、打断 AI 的默认做法、否定“骨架不依赖 scope”。主窗口已在记录</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>时间不够时的砍法：</strong>先砍看板和聊天，再把评测样本缩到 20 条，再把丢件结局缩到一种。闭环主线和取件解析不砍。</p>
+</section>
+
+<section id="ai">
+  <h2>AI 怎么做</h2>
+  <p>你面的是 AI 应用工程师，所以我把 AI 从配角调到了主线之一。核心判断是：AI 只用在规则做不好的地方，涉及钱和资格的事由规则和人决定。</p>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>环节</th><th>规则</th><th>大模型</th><th>人</th></tr></thead>
+    <tbody>
+      <tr><td class="t">取件解析</td><td>短信优先用规则</td><td>规则解析不了的截图交给模型，结果要能回查原文</td><td>发单人逐字段确认</td></tr>
+      <tr><td class="t">成批和清单</td><td>全部用规则</td><td>不用</td><td></td></tr>
+      <tr><td class="t">判责和赔付</td><td>按责任卡判定</td><td>整理时间线和说明，每句指向事件编号，指不到的不显示</td><td>赔钱前人工确认，双方可申诉</td></tr>
+      <tr><td class="t">发单审核</td><td>关键词规则</td><td>换说法绕过时给参考</td><td>判不准的转人工</td></tr>
+      <tr><td class="t">看板</td><td>数字全部由代码计算</td><td>第 11 项选问数时，只把限定问题映射成指标</td><td></td></tr>
+    </tbody>
+  </table></div>
+  <h3>演示时的原则</h3>
+  <ul>
+    <li><strong>能真跑的就真跑：</strong>评审可以自己贴文字试，也能看到失败时怎么兜底。</li>
+    <li><strong>跑不了的如实说：</strong>提前录好的结果明确标成预录，不装成实时，失败的例子也不藏。</li>
+    <li><strong>不接线上模型：</strong>网页要长期能打开，也不让真实取件信息外发。</li>
+    <li><strong>截图里的文字只当数据：</strong>里面写了什么指令都不照做。</li>
+  </ul>
+  <p class="note"><span class="warn">开工前要核对两件事：</span>一是网页里识别中文截图够不够准，这个没查到数据，要自己测。二是你说的“截一张图拿到 10 件的码和物品信息”，要看真实页面上到底有没有物品信息。</p>
+</section>
+
+<section id="pickup">
+  <h2>取件难点调研</h2>
+  <p>最不顺的是取件凭证不通用：同样的代取操作，有的学校能过，有的被拒。依据主要是 2019 到 2021 年的个人帖子，现状要到站确认。</p>
+  <p>找件慢、错拿、漏出库算驿站的问题，不作为平台要解决的难点 <span class="tag you">你定</span>。</p>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>难点</th><th>查到什么</th><th>依据强弱</th><th>只用手机怎么解决</th></tr></thead>
+    <tbody>
+      <tr><td class="t">凭证不通用</td><td>有的站核对手机号，有的要拍证件和人脸，有的升级后不能代取。身份码截图权限过大（<a href="https://www.douban.com/group/topic/200129037/">2020 年帖子</a>）。<a href="https://apps.apple.com/cn/app/%E8%8F%9C%E9%B8%9F-%E5%BF%AB%E9%80%92%E8%BD%BB%E6%9D%BE%E6%9F%A5%E5%AF%84%E5%8F%96/id951610982?uo=4">菜鸟商店页</a>写的是亲友绑定后“一键查，全部取”，范围看起来是全部包裹。发链接代取你记得有，官方说明没查到，待你在 App 里确认</td><td>中</td><td>如果官方链接能按单件授权给陌生同学，菜鸟件优先用它；否则只交单件取件码。每个驿站一张方式卡，接单前显示</td></tr>
+      <tr><td class="t">信息难录入</td><td>第三方 App 自述短信模板不同，有时识别不了。微信通知格式没查到</td><td>弱到中</td><td>AI 录入：粘贴短信或上传截图自动整理，失败转手填 <span class="tag you">你定</span></td></tr>
+      <tr><td class="t">重件和大件</td><td>重件要自己搬，比如水和油。统一标准没查到。闪送旧报道的起步档含 5 公斤（<a href="https://www.ifanr.com/847955">约 2016 年，只读到搜索摘要</a>），3 公斤是更严的选择</td><td>弱</td><td>超过 3 公斤或普通快递盒的不进普通批，走单件或更贵的价 <span class="tag you">你定</span> 阈值 <span class="tag asm">假设</span></td></tr>
+      <tr><td class="t">到付和验货</td><td>规则基本没查到</td><td>弱</td><td>发单时勾选，单独成批；默认只验外包装；到付款由收件人预付</td></tr>
+      <tr><td class="t">时间窗口撞车</td><td>课间和放学排长队；丰巢免费 18 小时（2026 年报道仍提到，官方页面未核）</td><td>弱</td><td>批次卡显示截止时间，临近截止的优先展示</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="money">
+  <h2>商业模式</h2>
+  <p>只放这一块。先回答三个问题：谁付钱、接单人为什么愿意做、追不回的赔款谁担。不做市场规模、融资和盈利预测，因为没有数据。</p>
+  <div class="tbl"><table class="wide">
+    <thead><tr><th>一批件数</th><th>接单人所得<br>3 元底价 + 每件 2 元</th><th>发单人每件付</th><th>发单人合计</th><th>平台留存<br>含赔付预留</th><th>不低于 18 元/时<br>需在多久内跑完</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">5 元</td><td class="num">6 元</td><td class="num">6 元</td><td class="num">1 元</td><td class="num">约 17 分钟</td></tr>
+      <tr><td class="num">3</td><td class="num">9 元</td><td class="num">3.5 元</td><td class="num">10.5 元</td><td class="num">1.5 元</td><td class="num">30 分钟</td></tr>
+      <tr><td class="num">5</td><td class="num">13 元</td><td class="num">3 元</td><td class="num">15 元</td><td class="num">2 元</td><td class="num">约 43 分钟</td></tr>
+      <tr><td class="num">10</td><td class="num">23 元</td><td class="num">2.7 元</td><td class="num">27 元</td><td class="num">4 元</td><td class="num">约 77 分钟</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted"><span class="tag asm">假设</span> 表里所有价格都是假设，用来说明结构。查到的代取单价多在 1 到 5 元；18 元是查到的兼职时薪个例上限。跑一批要多久没有查到，所以这张表能不能成立，要靠上线后记录的到站和离站时间来验证。</p>
+  <ul>
+    <li><strong>收入：</strong>服务费留存；加急费；重件加价。保险佣金写成持牌合作后的远期收入，当前不计入。</li>
+    <li><strong>成本：</strong>限额赔付、人工处理申诉、虚拟号和审核。</li>
+    <li><strong>资金：</strong>写一句“由持牌支付机构托管，确认后结算”。原型只模拟。</li>
+    <li><strong>参照：</strong>统一代取有人跑过，一位运营者<a href="https://www.zhihu.com/question/276350214">自述</a>两校日均约 600 件和 200 件，未核实，也带推广。<a href="https://hznews.hangzhou.com.cn/kejiao/content/2020-11/13/content_7852855.htm">柯基代拿</a>也是学生集中取送。所以不写“没人做过”。</li>
+  </ul>
+</section>
+
+<section id="gaps">
+  <h2>没查到的</h2>
+  <ul>
+    <li>单件取件耗时、校园排队时长、错拿和冒领的发生率。</li>
+    <li>顺丰、京东、邮政的代取规则，到付规则，驿站营业时间，亲友代取的件数上限。</li>
+    <li>闪送、UU 跑腿、美团跑腿、达达的官方保价条款，保险佣金比例，校园小额货损险是否买得到。</li>
+    <li>批次的过期时长，站内聊天记录的留存期限，小程序用户互聊的类目要求。</li>
+    <li>校内代搬运的价格，同学之间忘带代送的频率，手续代办的需求规模，菜鸟“发链接代取”的官方说明。</li>
+    <li>视觉大模型的结构化输出文档和价格，Tesseract.js 的中文截图效果，国内 AI 应用工程师岗位要求，这场笔试的评审标准。</li>
+  </ul>
+  <p class="muted">依据在项目调研文件夹的 A 到 G 文件和本页链接里。写这页前抽查了保险办法、Instacart、36 氪和微信 OCR 四个来源，内容相符；36 氪的说法主要来自骑手和社交平台。其余来源没有逐条核对，法律内容不是法律意见。</p>
+</section>
+</div>
+
+<script>
+(function () {
+  var KEY = 'scope-decisions-v1';
+  var form = document.getElementById('f');
+  var status = document.getElementById('status');
+  var out = document.getElementById('out');
+  var notes = document.getElementById('notes');
+  var sets = Array.prototype.slice.call(form.querySelectorAll('fieldset'));
+
+  function read() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+  }
+  function write(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function currentState() {
+    var state = { notes: notes.value };
+    sets.forEach(function (set) {
+      var picked = set.querySelector('input:checked');
+      if (picked) { state[picked.name] = picked.id; }
+    });
+    return state;
+  }
+  function refresh() {
+    status.textContent = '已选 ' + form.querySelectorAll('input:checked').length + ' / ' + sets.length;
+  }
+  function summary() {
+    var lines = sets.map(function (set) {
+      var title = set.querySelector('legend').firstChild.textContent.trim();
+      var picked = set.querySelector('input:checked');
+      return title + '：' + (picked ? picked.value : '未选');
+    });
+    if (notes.value.trim()) { lines.push('其他想法：' + notes.value.trim()); }
+    return lines.join('\n');
+  }
+
+  var saved = read();
+  Object.keys(saved).forEach(function (key) {
+    if (key === 'notes') { notes.value = saved.notes; return; }
+    var input = document.getElementById(saved[key]);
+    if (input) { input.checked = true; }
+  });
+  refresh();
+
+  form.addEventListener('change', function () { write(currentState()); refresh(); });
+  notes.addEventListener('input', function () { write(currentState()); });
+  document.getElementById('copy').addEventListener('click', function () {
+    var text = summary();
+    out.value = text;
+    function fallback() {
+      out.hidden = false;
+      out.focus();
+      out.select();
+      status.textContent = '没能自动复制，请手动复制下面的文字';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        out.hidden = true;
+        status.textContent = '已复制，贴回对话即可';
+      }).catch(fallback);
+    } else {
+      fallback();
+    }
+  });
+})();
+</script>
