@@ -7,6 +7,12 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SOLO_W = 900, PW = 428, PH = 800, CAP = 22;
 
+  /* 观看顺序：看完演示才解锁方案、过程和 Scope */
+  var LOCK_KEY = 'campus-errand-unlocked';
+  document.documentElement.classList.add('locked');
+  function readUnlocked() { try { return localStorage.getItem(LOCK_KEY) === '1'; } catch (e) { return false; } }
+  function writeUnlocked(v) { try { if (v) localStorage.setItem(LOCK_KEY, '1'); else localStorage.removeItem(LOCK_KEY); } catch (e) { /* 读写不了就按未解锁处理 */ } }
+
   var S = { step: 0, beat: 0, auto: false, timer: null, free: {}, claimCase: 'normal', started: false, soloWho: 'L', lastLayout: null, order: null };
   var CHAT = { msgs: [], sent: [], done: 0, manual: false };
 
@@ -81,20 +87,19 @@
     }).join('') + '</div>';
   }
   function phoneHTML(id) {
-    return '<div class="ph off" data-ph="' + id + '"><div class="ph-cap"></div><div class="ph-frame"><div class="device device-iphone-14-pro"><div class="device-frame"><div class="device-screen"><div class="mp"><div class="mp-status"><span>9:41</span>' + SIGNAL + '</div><div class="mp-nav"><a class="nav-back" hidden data-back>' + window.MP_ICON('back', 22, 2) + '</a><span data-title></span>' + CAPSULE + '</div><div class="mp-body" data-body></div><div data-tab></div><div class="mp-home"></div></div></div></div><div class="device-stripe"></div><div class="device-header"></div><div class="device-sensors"></div><div class="device-btns"></div><div class="device-power"></div></div></div><button class="ph-over" type="button" hidden title="点进去看"><span>点进去看</span></button></div>';
+    return '<div class="ph off" data-ph="' + id + '"><div class="ph-cap"></div><div class="ph-frame"><div class="device device-iphone-14-pro"><div class="device-frame"><div class="device-screen"><div class="mp"><div class="mp-status"><span>9:41</span>' + SIGNAL + '</div><div class="mp-nav"><a class="nav-back" hidden data-back>' + window.MP_ICON('back', 22, 2) + '</a><span data-title></span>' + CAPSULE + '</div><div class="mp-body" data-body></div><div data-tab></div><div class="mp-home"></div></div></div></div><div class="device-stripe"></div><div class="device-header"></div><div class="device-sensors"></div><div class="device-btns"></div><div class="device-power"></div></div></div></div>';
   }
 
   var IDS = ['L', 'R'], ph = {}, stageMain, sideEl, phonesEl;
 
   /* ———— 从第一拍累积到当前拍 ———— */
   function beatState(stepIdx, beatIdx) {
-    var st = STEPS[stepIdx], out = { L: null, R: null, w: st.side.w, rule: st.side.rule, note: st.side.note, title: st.side.title, eyebrow: st.side.eyebrow, basis: st.side.basis, over: null, cta: st.cta, link: st.link };
+    var st = STEPS[stepIdx], out = { L: null, R: null, w: st.side.w, rule: st.side.rule, note: st.side.note, title: st.side.title, eyebrow: st.side.eyebrow, basis: st.side.basis, cta: st.cta, link: st.link };
     for (var i = 0; i <= beatIdx; i++) {
       var b = st.beats[i];
       if (b.L) out.L = b.L;
       if (b.R) out.R = b.R;
       if (b.w) out.w = b.w;
-      if (b.over) out.over = b.over;
       if (b.title) out.title = b.title;
       if (b.eyebrow) out.eyebrow = b.eyebrow;
       if (b.basis !== undefined) out.basis = b.basis;
@@ -103,14 +108,21 @@
       if (b.rule !== undefined) out.rule = b.rule;
       if (b.note !== undefined) out.note = b.note;
     }
+    if (st.overview) {
+      out.ovSel = S.overPick == null ? beatIdx : S.overPick;
+      out.w = ['homeGuide', { sel: out.ovSel, shown: S.auto ? beatIdx + 1 : D.homeGuide.items.length }];
+    }
     return out;
+  }
+  function gotoSpec(spec) {
+    var g = spec.split(':');
+    goTo(idxOf(g[0]), +g[1] || 0);
   }
 
   /* ———— 布局 ———— */
   function layoutPhones(animate) {
     var st = STEPS[S.step], solo = innerWidth < SOLO_W;
     document.documentElement.classList.toggle('solo', solo);
-    stageMain.classList.toggle('is-four', !!st.overview);
     var used = st.layout === 2 ? ['L', 'R'] : st.layout === 1 ? [st.solo || 'L'] : [];
     if (!animate) stageMain.classList.add('no-anim');
 
@@ -198,17 +210,22 @@
   function applyCues() {
     if (!sideEl) return;
     $$('.cue', $('#demo')).forEach(function (el) { el.classList.remove('cue'); el.removeAttribute('data-cue'); el.removeAttribute('data-cue-pos'); });
+    var offWho = null;
     if (S.auto) return;
+    var atEnd = S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1;
+    if (atEnd && S.started) $('#end-btn').classList.add('cue');
     var nextChat = chatNext();
     (beatState(S.step, S.beat).cta || []).forEach(function (c) {
       if ((c.turn && nextChat !== c.who) || (c.done && nextChat)) return;
       if (c.unless && cueEls({ who: c.who, sel: c.unless }).length) return;
       var el = cueEls(c)[0];
-      if (!el) return;
+      if (!el) { if (ph[c.who] && ph[c.who].classList.contains('off')) offWho = c.who; return; }
       el.classList.add('cue');
       if (c.label) el.setAttribute('data-cue', c.label);
       if (c.pos) el.setAttribute('data-cue-pos', c.pos);
     });
+    /* 手机宽度只显示一台：该点的在另一台时，提示切换 */
+    if (offWho && !$('.ph:not(.off) .cue', phonesEl) && innerWidth < SOLO_W) { var sw = $('.solo-switch [data-solo="' + offWho + '"]'); if (sw) sw.classList.add('cue'); }
   }
   function clearFx() {
     $$('.fx-target', $('#demo')).forEach(function (el) { el.classList.remove('fx-target'); el.removeAttribute('data-fx-note'); });
@@ -273,12 +290,106 @@
       if (on && box) box.scrollLeft = on.offsetLeft - box.clientWidth / 2 + on.clientWidth / 2;
     }
   }
+  function unlock(scroll, persist) {
+    S.unlocked = true;
+    if (persist !== false) writeUnlocked(true);
+    document.documentElement.classList.remove('locked');
+    $$('.bar nav a').forEach(function (a) {
+      a.classList.remove('is-locked');
+      a.removeAttribute('aria-disabled');
+      a.removeAttribute('title');
+      var ic = $('.nav-lock', a);
+      if (ic) ic.remove();
+    });
+    if (scroll) $('#plan').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  }
+  function isLockedTarget(href) { return !S.unlocked && /^#(plan|how|scope|research)$/.test(href || ''); }
+  function markNavLocked() {
+    $$('.bar nav a').forEach(function (a) {
+      if (!isLockedTarget(a.getAttribute('href'))) return;
+      a.classList.add('is-locked');
+      a.setAttribute('aria-disabled', 'true');
+      a.setAttribute('title', '看完演示后解锁');
+      a.insertAdjacentHTML('beforeend', '<span class="nav-lock">' + window.MP_ICON('lock', 12, 2) + '</span>');
+    });
+  }
+  function lockHint() {
+    var el = $('#lock-hint');
+    el.textContent = '看完演示后解锁';
+    el.hidden = false;
+    clearTimeout(S.hintT);
+    S.hintT = setTimeout(function () { el.hidden = true; }, 1800);
+  }
+  /* 结束：自动走完、手动走到最后再继续、点结束按钮。自动走完时，已解锁过就不再滚走 */
+  function finishDemo(fromAuto) {
+    clearTimeout(S.timer); clearTimeout(S.passT);
+    S.auto = false;
+    setMode('done');
+    var first = !S.unlocked;
+    unlock(!fromAuto || first);
+  }
+  function stepsRemainMs() {
+    var ms = 0, st = STEPS[S.step];
+    for (var j = S.beat + 1; j < st.beats.length; j++) ms += st.beats[j].ms || 2500;
+    for (var i = S.step + 1; i < STEPS.length; i++) {
+      STEPS[i].beats.forEach(function (b, k) { ms += (b.ms || 2500) + (k === 0 && STEPS[i].layout !== 0 ? 300 : 0); });
+    }
+    return ms;
+  }
+  function updateRemain() {
+    var box = $('#remain'), mode = $('#mode-box').dataset.mode;
+    if (!box) return;
+    if (mode === 'done') { box.textContent = ''; return; }
+    var cur = STEPS[S.step].beats[S.beat].ms || 2500;
+    var left = S.auto ? Math.max(0, (S.beatEnd || 0) - Date.now()) : (S.started ? cur : cur + 300);
+    var sec = Math.ceil((stepsRemainMs() + left) / 1000);
+    box.textContent = ' · ' + (S.started ? '还剩 ' : '全程约 ') + Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2);
+  }
   function setMode(m) {
     var el = $('#mode');
-    el.dataset.mode = m;
+    $('#mode-box').dataset.mode = m;
     el.textContent = m === 'auto' ? '自动演示中' : m === 'manual' ? '手动操作中' : '演示结束';
     $('#auto-btn').textContent = m === 'auto' ? '暂停' : '继续自动';
+    updateRemain();
     applyCues();
+  }
+
+  /* ———— 首页讲解：手机里加框，细线连到旁边的讲解 ———— */
+  function markOverview(st, bs, layoutChanged) {
+    $$('[data-ov]', phonesEl).forEach(function (el) { el.classList.remove('ov-box', 'on'); el.removeAttribute('data-ov'); el.removeAttribute('data-ovn'); });
+    clearTimeout(S.ovT);
+    if (!st.overview || S.free.L) { $('#ov-lines').innerHTML = ''; return; }
+    var shown = bs.w[1].shown;
+    D.homeGuide.items.slice(0, shown).forEach(function (it, i) {
+      it.boxes.forEach(function (sel) {
+        var el = $(sel, ph.L);
+        if (!el) return;
+        el.classList.add('ov-box');
+        el.classList.toggle('on', i === bs.ovSel);
+        el.dataset.ov = i;
+        el.dataset.ovn = i + 1;
+      });
+    });
+    drawOvLines();
+    /* 手机换位的动画结束后再量一次 */
+    S.ovT = setTimeout(drawOvLines, layoutChanged ? 520 : 60);
+  }
+  function drawOvLines() {
+    var svg = $('#ov-lines'), st = STEPS[S.step];
+    if (!svg) return;
+    if (!st.overview || S.free.L || innerWidth < SOLO_W) { svg.innerHTML = ''; return; }
+    var base = stageMain.getBoundingClientRect(), phone = ph.L.getBoundingClientRect(), html = '';
+    var gutter = phone.right - base.left + 16;
+    $$('[data-ov]', phonesEl).forEach(function (el) {
+      var i = el.dataset.ov, box = el.getBoundingClientRect(), item = $('[data-ovi="' + i + '"] > i', sideEl);
+      if (!item) return;
+      var r = item.getBoundingClientRect();
+      var x1 = box.right - base.left, y1 = box.top + box.height / 2 - base.top;
+      var x2 = r.left - base.left - 4, y2 = r.top + r.height / 2 - base.top;
+      var x = gutter + (+i) * 5;
+      html += '<path class="' + (el.classList.contains('on') ? 'on' : '') + '" d="M' + x1 + ' ' + y1 + 'H' + x + 'V' + y2 + 'H' + x2 + '"/>';
+    });
+    svg.innerHTML = html;
   }
 
   /* ———— 进入某个状态 ———— */
@@ -292,17 +403,17 @@
     if (b.focus) S.soloWho = b.focus;
     else if (freshStep && st.layout === 2 && !b.focus) S.soloWho = 'L';
 
-    renderSide(freshStep || !!b.over, bs);
-    IDS.forEach(function (id, i) {
-      var f = bs.over && bs.over[i], who = D.who[id], ov = $('.ph-over', ph[id]);
-      ov.hidden = !f;
-      if (f) ov.dataset.goto = f.go;
-      $('.ph-cap', ph[id]).innerHTML = '<b>' + (f ? f.cap : who.role + ' · ' + who.name) + '</b>';
+    renderSide(freshStep, bs);
+    IDS.forEach(function (id) {
+      var who = D.who[id];
+      $('.ph-cap', ph[id]).innerHTML = '<b>' + (st.cap || who.role + ' · ' + who.name) + '</b>';
     });
     if (st.layout > 0) { renderPhone('L', bs.L); renderPhone('R', bs.R); }
+    markOverview(st, bs, layoutChanged);
     layoutPhones(true);
     if (st.id === 'chat') chatSync();
     renderRail();
+    $('[data-ctl="next"]').textContent = S.step === STEPS.length - 1 && S.beat === st.beats.length - 1 ? '看方案' : '下一步';
     clearFx();
     applyCues();
     if (b.toast) setTimeout(function () { toast(b.toast[0], b.toast[1]); }, 120);
@@ -312,7 +423,7 @@
 
   function goTo(step, beat) {
     var prev = S.step;
-    S.free = {};
+    S.free = {}; S.overPick = null;
     S.step = step; S.beat = beat || 0;
     apply(prev);
     if (S.auto) schedule(); else armPass();
@@ -333,12 +444,14 @@
     if (S.step + 1 < STEPS.length) { goTo(S.step + 1, 0); return true; }
     return false;
   }
+  function nextOrFinish() { if (!advance()) finishDemo(false); }
 
   /* ———— 自动演示：一碰就交给人 ———— */
   function schedule() {
     clearTimeout(S.timer);
     var st = STEPS[S.step], b = st.beats[S.beat];
     var extra = S.beat === 0 && st.layout !== 0 ? 300 : 0;
+    S.beatEnd = Date.now() + (b.ms || 2500) + extra;
     S.timer = setTimeout(tick, (b.ms || 2500) + extra);
   }
   function stageInView() {
@@ -348,15 +461,22 @@
   function tick() {
     if (!S.auto) return;
     if (!stageInView()) { S.timer = setTimeout(tick, 500); return; }
-    if (S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1) { S.auto = false; setMode('done'); return; }
+    if (S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1) { finishDemo(true); return; }
     advance();
   }
-  function play() { clearTimeout(S.passT); S.auto = true; S.started = true; setMode('auto'); schedule(); }
+  function play() {
+    clearTimeout(S.passT);
+    S.auto = true; S.started = true; setMode('auto');
+    if (STEPS[S.step].overview) apply(S.step);
+    schedule();
+  }
   function takeOver() {
     S.started = true;
     if (S.timer) clearTimeout(S.timer);
+    var wasAuto = S.auto;
     S.auto = false; setMode('manual');
     armPass();
+    if (wasAuto && STEPS[S.step].overview) apply(S.step);
   }
   function replay() {
     S.free = {}; S.claimCase = 'normal'; resetOrder();
@@ -436,11 +556,18 @@
       var t = e.target.closest && e.target;
       if (!t) return;
       var n;
-      /* 总览：整台手机和标题都能点 */
-      var inPhone = t.closest('.ph');
-      if (inPhone && STEPS[S.step].overview) {
-        var f4 = beatState(S.step, S.beat).over[IDS.indexOf(inPhone.dataset.ph)];
-        takeOver(); goTo(idxOf(f4.go));
+      /* 解锁前：导航和“看依据”只提示，不跳走 */
+      var anchor = t.closest('a[href^="#"]');
+      if (anchor && isLockedTarget(anchor.getAttribute('href'))) { e.preventDefault(); lockHint(); return; }
+      /* 首页讲解：点框或讲解互相高亮；圈子、我的可以进去 */
+      if (STEPS[S.step].overview && !S.free.L && (n = t.closest('[data-ov-enter], [data-ov], [data-ovi]'))) {
+        var ovi = +(n.dataset.ovEnter || n.dataset.ov || n.dataset.ovi || 0);
+        var ovItem = D.homeGuide.items[ovi];
+        takeOver();
+        if (ovItem.enter && (n.hasAttribute('data-ov-enter') || n.hasAttribute('data-ov'))) {
+          if (ovItem.enter.step) goTo(idxOf(ovItem.enter.step));
+          else { S.free.L = [ovItem.enter.screen, {}]; apply(S.step); }
+        } else { S.overPick = ovi; apply(S.step); }
         return;
       }
       if ((n = t.closest('[data-chat-send]'))) {
@@ -467,6 +594,8 @@
         takeOver();
         /* 圈子这一步提交举报：走到最后一拍，提示也就结束了 */
         if (n.hasAttribute('data-next') && STEPS[S.step].id === 'circle') { goTo(S.step, STEPS[S.step].beats.length - 1); return; }
+        /* 从“我的”点回首页：回到讲解状态 */
+        if (STEPS[S.step].overview && p[0] === 'home') { delete S.free[id]; apply(S.step); return; }
         S.free[id] = [p[0], JSON.parse(p[1] || '{}')];
         renderPhone(id, null);
         if (n.hasAttribute('data-next')) toast(id, '已提交举报');
@@ -474,7 +603,7 @@
       }
       if ((n = t.closest('[data-goto]'))) {
         takeOver();
-        goTo(idxOf(n.dataset.goto));
+        gotoSpec(n.dataset.goto);
         if (!n.closest('#demo')) $('#demo').scrollIntoView();
         return;
       }
@@ -482,7 +611,7 @@
         takeOver();
         if (n.dataset.freeGoto && S.free[n.closest('[data-ph]').dataset.ph]) goTo(idxOf(n.dataset.freeGoto));
         else if (n.dataset.jump) goTo(idxOf(n.dataset.jump.split(':')[0]), +n.dataset.jump.split(':')[1]);
-        else advance();
+        else nextOrFinish();
         return;
       }
       if ((n = t.closest('[data-back]'))) {
@@ -494,10 +623,11 @@
         return;
       }
       if ((n = t.closest('[data-step]'))) { takeOver(); goTo(+n.dataset.step); return; }
-      if ((n = t.closest('[data-solo]'))) { takeOver(); S.soloWho = n.dataset.solo; layoutPhones(false); return; }
+      if ((n = t.closest('[data-solo]'))) { takeOver(); S.soloWho = n.dataset.solo; layoutPhones(false); applyCues(); return; }
       if ((n = t.closest('[data-ctl]'))) {
         var k = n.dataset.ctl;
-        if (k === 'next') { takeOver(); advance(); }
+        if (k === 'next') { takeOver(); nextOrFinish(); }
+        if (k === 'end') { takeOver(); finishDemo(false); }
         if (k === 'prev') { takeOver(); if (S.beat > 0) goTo(S.step, S.beat - 1); else if (S.step > 0) goTo(S.step - 1); }
         if (k === 'replay') replay();
         if (k === 'auto') { if (S.auto) takeOver(); else if (S.step === STEPS.length - 1 && S.beat === STEPS[S.step].beats.length - 1) replay(); else play(); }
@@ -510,13 +640,13 @@
       }
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-spec],[data-prec],[data-ins]')) { e.preventDefault(); e.target.click(); return; }
       if (!stageInView()) return;
-      if (e.key === 'ArrowRight') { takeOver(); advance(); }
+      if (e.key === 'ArrowRight') { takeOver(); nextOrFinish(); }
       if (e.key === 'ArrowLeft') { takeOver(); if (S.step > 0) goTo(S.step - 1); }
     });
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { layoutPhones(false); drawBriefMarks(true); }, 80);
+      rt = setTimeout(function () { layoutPhones(false); drawBriefMarks(true); drawOvLines(); }, 80);
     });
   }
 
@@ -629,6 +759,7 @@
     renderBrief();
     stageMain = $('#st-main'); sideEl = $('#st-side'); phonesEl = $('#phones');
     phonesEl.innerHTML = IDS.map(phoneHTML).join('');
+    stageMain.insertAdjacentHTML('beforeend', '<svg id="ov-lines" aria-hidden="true"></svg>');
     IDS.forEach(function (id) { ph[id] = $('[data-ph="' + id + '"]', phonesEl); });
     $('#rail-steps').innerHTML = STEPS.map(function (s, i) { return '<button data-step="' + i + '" title="' + s.side.eyebrow + '">' + s.name + '</button>'; }).join('');
     document.documentElement.classList.toggle('solo', innerWidth < SOLO_W);
@@ -637,6 +768,12 @@
     if (window.PAGE_EXTRAS) window.PAGE_EXTRAS();
 
     var q = new URLSearchParams(location.search);
+    /* 调试：?unlock=1 直接解锁（不写入记录），?unlock=0 清掉记录 */
+    if (q.get('unlock') === '0') writeUnlocked(false);
+    markNavLocked();
+    if (q.get('unlock') === '1') unlock(false, false);
+    else if (readUnlocked()) unlock(false, false);
+    setInterval(updateRemain, 500);
     apply(-1);
     drawBriefMarks(false);
     /* 字体或图片晚到时重新量一次 */
@@ -662,6 +799,7 @@
     }, { threshold: .6 });
     io.observe($('#demo'));
     setMode('manual');
+    updateRemain();
     $('#mode').textContent = '等待开始';
     $('#auto-btn').textContent = '自动播放';
   }

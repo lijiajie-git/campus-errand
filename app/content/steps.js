@@ -1,6 +1,7 @@
 /* 演示步骤。每一步：
    layout   手机数量（0、1、2），舞台按它切换
-   over     总览页：这两台手机的标题和点进去去哪一步
+   overview 首页讲解：一拍框一项，内容在 data.js 的 homeGuide
+   cap      手机上方的标题，不写就显示同学的角色
    cta      手动时的下一步提示：who 哪台手机（L、R、side），sel 选择器，label 短标签，pos 标签位置（left、in，不写在上方）
             turn 轮到这台手机发消息才显示，done 消息都发完才显示，unless 这个元素存在时不显示
             affects 是因果预告：悬停这个按钮时，哪些区域亮起描边，note 是小字
@@ -13,31 +14,14 @@
             ms 是自动演示时停留的毫秒数；pass 表示这一拍是过程动画，手动时也会自己走完；focus 是手机宽度下优先显示哪台 */
 window.STEPS = [
   {
-    id: 'overview', name: '总览', layout: 2, overview: true,
-    side: { eyebrow: '功能总览 1 / 2' },
+    id: 'overview', name: '首页', layout: 1, solo: 'L', overview: true, sideW: 560, cap: '首页',
+    side: { eyebrow: '首页', title: '这些是大学生需要的功能', w: ['homeGuide'] },
     beats: [
-      {
-        L: ['home'], R: ['hall'], ms: 3000,
-        over: [{ cap: '首页 · 找服务', go: 'home' }, { cap: '订单 · 抢一批', go: 'hall' }],
-        title: '首页和订单：进来就能发，抢的是一批',
-        note: '代取放在第一位；订单页只放批次卡，只露脱敏信息。点手机进入对应功能。',
-        basis: [
-          { t: '外卖快递进不了校，是跑腿需求的来源之一', links: ['nbd2017'] },
-          { t: '单价低，一单 1 至 3 元，一件一跑不划算', links: ['nbd2017', 'tide2026'] },
-          { t: '批次和自动打码，我们看的产品里没看到', links: [] }
-        ]
-      },
-      {
-        L: ['circle'], R: ['me'], ms: 3000, eyebrow: '功能总览 2 / 2',
-        over: [{ cap: '圈子 · 校内交流', go: 'circle' }, { cap: '我的 · 信用和收入', go: 'settle' }],
-        title: '圈子和我的：有人气，也看得见信用',
-        note: '圈子兼作表白墙，带举报入口；我的把信用和可抢上限放在最上面。点手机进入对应功能。',
-        basis: [
-          { t: '评分大多是高分，光看评分不够，所以信用看履约', links: ['nimRating'] },
-          { t: '出事要能找到人：同学代拿丢件和校园配送纠纷都有记录', links: ['zhihuDispute', 'gmw2025'] },
-          { t: '我们看的一个产品，圈子里有疑似兼职引流，所以要有举报', links: [] }
-        ]
-      }
+      { L: ['home'], ms: 1500 },
+      { ms: 1500 },
+      { ms: 1500 },
+      { ms: 1500 },
+      { ms: 1500 }
     ]
   },
   {
@@ -51,7 +35,7 @@ window.STEPS = [
     ]
   },
   {
-    id: 'home', name: '主页', layout: 1, solo: 'L', sideW: 520,
+    id: 'home', name: '发单入口', layout: 1, solo: 'L', sideW: 520,
     link: [{ who: 'L', sel: '.svc-pick', note: '完整流程' }],
     cta: [{ who: 'L', sel: '.svc-pick', label: '点这里发单' }],
     side: { eyebrow: '主页', title: '六类服务，先把代取做透', rule: '只有代取快递走完整流程', note: '其他入口可以点进去看，到发单表单为止。代占座改成代排队，代考、代打卡在发单时拦截。', w: ['services'] },
@@ -92,14 +76,14 @@ window.STEPS = [
     beats: [
       { L: ['price'], R: ['hall', { fresh: 0 }], ms: 900, cta: [{ who: 'L', sel: '.pay-btn', label: '点这里发布', affects: [{ who: 'R', sel: '.grow.pad8', note: '批次卡会飞到这里' }] }] },
       { L: ['myorder', { st: 'wait' }], R: ['hall', { fresh: 1 }], ms: 2600, fx: 'fly', focus: 'R', pass: true, cta: null },
-      { R: ['hall', { fresh: 2 }], w: ['hallFocus'], rule: '重点：隐私先盖住，才进大厅', note: '', basis: null, ms: 3400, fx: 'zoomcard', focus: 'R', cta: [{ who: 'R', sel: '.bc-f .pill', label: '点这里抢这批', pos: 'left', affects: [{ who: 'L', sel: '.stat-head', note: '抢到后这里会变' }] }] }
+      { R: ['hall', { fresh: 2 }], w: ['hallFocus'], rule: '重点：隐私先盖住，才进大厅', note: '', basis: null, ms: 3200, fx: 'zoomcard', focus: 'R', cta: [{ who: 'R', sel: '.bc-f .pill', label: '点这里抢这批', pos: 'left', affects: [{ who: 'L', sel: '.stat-head', note: '抢到后这里会变' }] }] }
     ]
   },
   {
     id: 'compare', name: '对比', layout: 0,
     cta: [{ who: 'side', sel: '.cmp-next' }],
     side: { eyebrow: '亮点二 · 抢一批', w: ['compare'], basis: [{ t: '单价低，收入靠一趟能带几件（我们的推断）；有运营者试过学生抢单后放弃，我们用信用和批次来应对', links: ['tide2026', 'zhihuOperator'] }] },
-    beats: [{ ms: 6100 }]
+    beats: [{ ms: 5800 }]
   },
   {
     id: 'grab', name: '抢批', layout: 2,
@@ -141,7 +125,7 @@ window.STEPS = [
     side: { eyebrow: '实时聊天', title: '左边发，右边马上收到', rule: '贵重件的对话里，自动出现投保提示', note: '两台手机都能打字，默认文字已填好，点发送就能看到另一端收到。', w: ['dock'] },
     beats: [
       { L: ['chat', { me: 'L' }], R: ['chat', { me: 'R' }], send: 'L', ms: 1100 },
-      { send: 'R', ms: 2500, focus: 'R' },
+      { send: 'R', ms: 2300, focus: 'R' },
       { send: 'R', ms: 900, focus: 'R' },
       { send: 'L', ms: 900, focus: 'L' },
       { send: 'R', ms: 1000, focus: 'R' }
@@ -161,7 +145,7 @@ window.STEPS = [
     link: [{ who: 'R', sel: '.cap', note: '能抢更大的批' }],
     cta: [{ who: 'R', sel: '.more-link', label: '点这里看丢了怎么办' }],
     side: { eyebrow: '结算和信用', title: '信用有实际用途', rule: '履约一次，就能抢更大的批', note: '信用不是摆设。它决定你能抢多大的批，也决定能不能接贵重件。', w: ['tiers'] },
-    beats: [{ R: ['settle'], ms: 4200 }]
+    beats: [{ R: ['settle'], ms: 4000 }]
   },
   {
     id: 'claim', name: '丢件', layout: 2,
@@ -173,7 +157,7 @@ window.STEPS = [
       { w: ['chain', { n: 2 }], ms: 1700, pass: true },
       { w: ['chain', { n: 3 }], ms: 1700, pass: true },
       { w: ['chain', { n: 4 }], ms: 1700, pass: true },
-      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], ms: 3400, focus: 'L', cta: [{ who: 'L', sel: '.mp-btn', label: '点这里看圈子' }] }
+      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], ms: 3200, focus: 'L', cta: [{ who: 'L', sel: '.mp-btn', label: '点这里看圈子' }] }
     ]
   },
   {
@@ -181,7 +165,7 @@ window.STEPS = [
     link: [{ who: 'L', sel: '.notice-s' }, { who: 'L', sel: '.rep' }],
     side: { eyebrow: '圈子', title: '扩大交流，兼作表白墙', rule: '发现违规交易，就删帖封号', note: '校内交流带来传播，也带来风险。代考、代打卡这类帖子可以从这里举报。', foot: '在主页点“圈子”也能进来。', basis: [{ t: '我们看的一个产品，圈子里有疑似兼职引流', links: [] }] },
     beats: [
-      { L: ['circle'], ms: 1900, cta: [{ who: 'L', sel: '.post .rep', label: '点这里试试举报', unless: '.sheet-box' }, { who: 'L', sel: '.sheet-box .mp-btn', label: '点这里提交' }] },
+      { L: ['circle'], ms: 1700, cta: [{ who: 'L', sel: '.post .rep', label: '点这里试试举报', unless: '.sheet-box' }, { who: 'L', sel: '.sheet-box .mp-btn', label: '点这里提交' }] },
       { L: ['circle', { sheet: 1 }], ms: 1500, cta: [{ who: 'L', sel: '.sheet-box .mp-btn', label: '点这里提交' }] },
       { L: ['circle', {}], ms: 900, toast: ['L', '已提交举报'], cta: null }
     ]

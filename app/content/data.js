@@ -56,6 +56,21 @@ window.CONTENT = {
   area: '北区 3 号楼一带',
   room: '北区 3 号楼 A101',
 
+  /* ———— 首页讲解：演示第一步，框一个说一个 ————
+     boxes 是手机里框哪些元素；heavy 是重点；enter 是点进去去哪（step 是某一步，screen 是这台手机切到某界面） */
+  homeGuide: {
+    eyebrow: '首页',
+    title: '这些是大学生需要的功能',
+    tags: { common: '常见功能', focus: '校园重点', new: '我们新增' },
+    items: [
+      { name: '跑腿、代取快递', tag: 'common', text: '常规操作，大家都熟。', boxes: ['.svc:nth-child(1)', '.svc:nth-child(4)'] },
+      { name: '代排队', tag: 'focus', heavy: true, text: '真人到场，到点交接，代替代占座。', boxes: ['.svc:nth-child(5)'] },
+      { name: '代办事、校园手续代办', tag: 'focus', heavy: true, text: '比如同学在外实习，学校有手续没办也不用担心，可以找人代办。', small: '只走学校认可的委托流程。', boxes: ['.svc:nth-child(6)'] },
+      { name: '圈子', tag: 'common', text: '加了论坛，大家可以发帖交流。', boxes: ['.weui-tabbar__item:nth-child(3)'], enter: { step: 'circle' }, enterLabel: '进去看看' },
+      { name: '我的', tag: 'new', text: '加了信用分。', boxes: ['.weui-tabbar__item:nth-child(4)'], enter: { screen: 'me' }, enterLabel: '进去看看' }
+    ]
+  },
+
   /* ———— 服务宫格 ———— */
   services: [
     { k: 'parcel', t: '代取快递', full: true },

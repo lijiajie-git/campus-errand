@@ -10,12 +10,22 @@ window.PAGE_EXTRAS = function () {
   }
   function plainList(rows) { return '<ul class="plain">' + rows.map(function (r) { return '<li><b>' + r[0] + '</b>' + r[1] + '</li>'; }).join('') + '</ul>'; }
 
+  /* ———— 平台责任：两边并排，一眼看出两边都怕 ———— */
+  function responsibilityHTML(R0) {
+    if (!R0) return '';
+    return '<div class="resp">' + R0.sides.map(function (s) {
+      return '<div class="resp-side"><h4>' + s.who + '</h4>' + s.rows.map(function (r) {
+        return '<div class="resp-row"><b>' + r.fear + '</b><p>' + r.how + '</p>' + (r.go ? '<a data-goto="' + r.go + '">' + R0.goLabel + '</a>' : '<span>' + R0.noDemo + '</span>') + '</div>';
+      }).join('') + '</div>';
+    }).join('') + '</div><dl class="resp-notes">' + R0.notes.map(function (n) { return '<div><dt>' + n.k + '</dt><dd>' + n.t + '</dd></div>'; }).join('') + '</dl>';
+  }
+
   /* ———— 方案 ———— */
   var P = window.PLAN;
   if (P) {
-    $('#plan').innerHTML = '<div class="wrap"><div class="sec-no">' + P.no + '</div><h2>' + P.title + '</h2><p class="lede">' + P.lede + '</p>' +
-      '<div class="hls">' + P.highlights.map(function (h, i) {
-        return '<div class="hlc"><i>亮点 ' + (i + 1) + '</i><h4>' + h.h + '</h4><p>' + h.say + '</p><dl><dt>涉及哪些部分</dt><dd>' + h.parts + '</dd><dt>产品考量</dt><dd>' + h.why + '</dd><dt>怎么演示</dt><dd>' + h.demo + '</dd></dl><a data-goto="' + h.go + '">看演示</a></div>';
+    $('#plan').innerHTML = '<div class="wrap"><div class="sec-no">' + P.no + '</div><h2>' + P.title + '</h2><p class="lede">' + P.lede + '</p><h3>' + P.responsibilityTitle + '</h3>' + responsibilityHTML(P.responsibility) +
+      '<h3>' + P.hlTitle + '</h3><p class="hl-lede">' + P.hlLede + '</p><div class="hls">' + P.highlights.map(function (h, i) {
+        return '<div class="hlc"><i>亮点 ' + (i + 1) + '</i><h4>' + h.h + '</h4><p class="hlc-lead">' + h.lead + '</p><p>' + h.say + '</p><dl><dt>涉及哪些部分</dt><dd>' + h.parts + '</dd><dt>产品考量</dt><dd>' + h.why + '</dd><dt>怎么演示</dt><dd>' + h.demo + '</dd></dl><a data-goto="' + h.go + '">看演示</a></div>';
       }).join('') + '</div>' +
       '<h3>' + P.flowTitle + '</h3>' + table(['流程', '发单端', '平台规则', '接单端', ''], P.flow.map(function (r) { return [r[0], r[1], r[2], r[3], '<a data-goto="' + r[4] + '">看演示</a>']; }), { rule: 2 }) +
       '<div class="two"><div><h3>' + P.dutyTitle + '</h3>' + table(['情况', '谁负责', '怎么赔'], P.duty) + '<p class="plan-note">' + P.dutyNote + '</p></div>' +
@@ -47,8 +57,9 @@ window.PAGE_EXTRAS = function () {
   /* ———— 过程：断轴泳道 ———— */
   var R = window.PROCESS;
   if (R) {
+    /* 断轴：每段按 weight 分宽度，段与段之间留一条“离开 x 小时”的折叠带；空档里的时间都压到折叠带 */
     var total = R.segments.reduce(function (s, g) { return s + g.weight; }, 0);
-    var BREAK = 1.2; /* 断口占的百分比 */
+    var BREAK = 5;
     var usable = 100 - BREAK * (R.segments.length - 1);
     var starts = [], acc = 0;
     R.segments.forEach(function (g) { starts.push(acc); acc += g.weight / total * usable + BREAK; });
@@ -61,19 +72,20 @@ window.PAGE_EXTRAS = function () {
       return 100;
     };
     var pct = function (t) { return pctN(t).toFixed(2) + '%'; };
-    var label = function (t) { var h = Math.floor(t / 60), mi = Math.round(t - h * 60); return h + ':' + (mi < 10 ? '0' : '') + mi; };
     var laneIndex = function (id) { for (var i = 0; i < R.lanes.length; i++) if (R.lanes[i].id === id) return i; return 0; };
     var evById = function (id) { return R.events.filter(function (e) { return e.id === id; })[0]; };
 
-    $('#how').innerHTML = '<div class="wrap"><div class="sec-no">' + R.no + '</div><h2>' + R.title + '</h2><p class="sub">' + R.sub + '</p>' +
+    $('#how').innerHTML = '<div class="wrap"><div class="sec-no">' + R.no + '</div><h2>' + R.title + '</h2><p class="how-note">' + R.note + '</p>' +
       '<div class="principles" id="principles">' + R.principles.map(function (p, i) { return '<button data-p="' + i + '"><i>原则 ' + (i + 1) + '</i>' + p.name + '</button>'; }).join('') + '</div>' +
       '<div class="replay-row"><span>' + R.day + '</span><button id="replay-process">回放过程</button></div>' +
       '<div class="lanes" id="lanes"></div><div class="detail" id="detail"></div><ul class="mobile-list" id="mobile-list"></ul>' +
-      '<div class="how-grid">' + R.columns.map(function (c) { return '<div><h3>' + c.h + '</h3><ul>' + c.items.map(function (it) { return '<li><b>' + it[0] + '</b><br>' + it[1] + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div>' +
+      '<div class="how-d">' + R.details.map(function (d) {
+        return '<details><summary><b>' + d.h + '</b><span>' + d.one + '</span></summary><div class="inner">' + (d.list ? plainList(d.list) : '') + (d.table ? table(d.table.head, d.table.rows) : '') + (d.after ? '<p>' + d.after + '</p>' : '') + '</div></details>';
+      }).join('') + '</div>' +
       '<div class="foot">' + R.footText + '<a href="' + R.footLink + '">' + R.footLabel + '</a></div></div>';
 
     var lanes = $('#lanes');
-    var html = '<div class="lz-axis">' + R.ticks.map(function (t) { return '<span class="lz-tick" style="left:' + pct(t) + '">' + label(t) + '</span>'; }).join('') + '</div>';
+    var html = '<div class="lz-axis">' + R.segments.map(function (g, i) { return '<span class="lz-tick" style="left:' + starts[i].toFixed(2) + '%;transform:none">' + g.label + '</span>'; }).join('') + '</div>';
     var endT = R.segments[R.segments.length - 1].to;
     R.lanes.forEach(function (l) {
       var bars = R.bars.filter(function (b) { return b.lane === l.id; }).map(function (b) {
@@ -93,7 +105,7 @@ window.PAGE_EXTRAS = function () {
         links += '<span class="lz-link" data-link="' + e.id + '" style="left:' + pct(e.t) + ';--a:' + a + ';--b:' + b + '"></span>';
       });
     });
-    var breaks = R.segments.slice(1).map(function (g, i) { return '<span class="lz-break" style="left:' + (starts[i + 1] - BREAK / 2).toFixed(2) + '%"></span>'; }).join('');
+    var breaks = R.segments.slice(1).map(function (g, i) { return '<span class="lz-break" style="left:' + (starts[i + 1] - BREAK / 2).toFixed(2) + '%;width:' + (BREAK - .6) + '%"><span>' + g.away + '</span></span>'; }).join('');
     html += '<div class="lz-links">' + breaks + links + '<div class="lz-playhead" hidden></div></div>';
     lanes.innerHTML = html;
 
@@ -137,7 +149,12 @@ window.PAGE_EXTRAS = function () {
       })();
     });
 
-    $('#mobile-list').innerHTML = R.events.map(function (e) { return '<li' + (e.key ? ' class="key"' : '') + '><time>' + e.time + '</time>' + e.title + '<small>' + e.ask + '</small></li>'; }).join('');
+    var seg = 0;
+    $('#mobile-list').innerHTML = R.events.slice().sort(function (a, b) { return a.t - b.t; }).map(function (e) {
+      var away = '';
+      while (seg + 1 < R.segments.length && e.t >= R.segments[seg + 1].from) { seg++; away += '<li class="away">' + R.segments[seg].away + '</li>'; }
+      return away + '<li' + (e.key ? ' class="key"' : '') + '><time>' + e.time + '</time>' + e.title + '<small>' + e.ask + '</small></li>';
+    }).join('');
   }
 
   /* ———— 顶栏高亮 ———— */

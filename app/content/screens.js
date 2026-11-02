@@ -241,6 +241,12 @@
     hallFocus: function () {
       return '<div class="hf">' + batchCard({ foot: false, scan: true }) + '</div><div class="fields hf-two"><div><label>' + D.focusOthers + '</label>' + D.publicFields.join('、') + '</div><div class="f-amber"><label>' + D.focusAfter + '</label>' + D.privateFields.join('、') + '</div></div><span class="demo-tag">打码是演示动画</span>';
     },
+    homeGuide: function (a) {
+      var G = D.homeGuide;
+      return '<ol class="hg">' + G.items.map(function (it, i) {
+        return '<li class="hg-i' + (it.heavy ? ' hg-heavy' : '') + (i === a.sel ? ' on' : '') + (i < a.shown ? '' : ' off') + '" data-ovi="' + i + '"><i>' + (i + 1) + '</i><div><b>' + it.name + '</b><em class="ft-' + it.tag + '">' + G.tags[it.tag] + '</em><p>' + it.text + (it.small ? '<small>' + it.small + '</small>' : '') + (it.enter ? ' <a data-ov-enter="' + i + '">' + it.enterLabel + ' ›</a>' : '') + '</p></div></li>';
+      }).join('') + '</ol>';
+    },
     dock: function () { return '<div class="dock"><span class="dock-tag">平台</span></div>'; },
     services: function () {
       return '<ul class="mini-list">' + D.services.map(function (s) { return '<li><b>' + s.t + '</b>' + (s.full ? '完整流程' : s.hint) + '</li>'; }).join('') + '</ul>';

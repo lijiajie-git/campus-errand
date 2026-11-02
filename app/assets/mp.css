@@ -367,6 +367,9 @@
 @media (hover: none) { .cue[data-cue]::before { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cue { animation: none; outline: 2px solid #07c160; outline-offset: 2px; } }
 /* 因果预告和说明联动：琥珀细描边 */
+.ov-box { position: relative; outline: 1px solid rgba(255,176,32,.6); outline-offset: 1px; border-radius: 8px; cursor: pointer; }
+.ov-box.on { outline: 2px solid #ffb020; }
+.ov-box::before { content: attr(data-ovn); position: absolute; z-index: 5; right: 1px; top: 1px; width: 15px; height: 15px; border-radius: 50%; background: #ffb020; color: #0d1a2b; font: 700 10px/15px ui-monospace, Menlo, monospace; text-align: center; }
 .fx-target { position: relative; outline: 2px solid #ffb020; outline-offset: 2px; border-radius: 8px; }
 .fx-target[data-fx-note]::after { content: attr(data-fx-note); position: absolute; z-index: 40; right: 4px; top: 4px; white-space: nowrap; background: #ffb020; color: #0d1a2b; font-size: 12px; font-weight: 600; line-height: 20px; padding: 0 7px; border-radius: 3px; pointer-events: none; }
 .mp-toast { animation: toast 1.4s both; pointer-events: none; }
