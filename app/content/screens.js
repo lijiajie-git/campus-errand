@@ -35,7 +35,18 @@
   function nav(name, args) { return 'data-nav="' + name + '|' + esc(args || {}) + '"'; }
   function money(n) { return '¥' + Number(n).toFixed(2); }
   function btn(text, attr, cls) { return '<a class="weui-btn weui-btn_primary mp-btn ' + (cls || '') + '" ' + (attr || 'data-next') + '>' + text + '</a>'; }
-  function mz(text) { return '<span class="mz"><span>' + text + '</span></span>'; }
+  function mz(text, d) { return '<span class="mz"' + (d ? ' style="--d:' + d + 's"' : '') + '><span>' + text + '</span></span>'; }
+  function htmlEsc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  /* 订单状态在引擎里，发单页改了规格和保险，这里读到的就是改后的 */
+  function order() { return window.APP.order(); }
+  function chatMsg(m, me, cls) {
+    if (m.card) {
+      var k = order().insured ? D.insureCard : D.insureCardNo;
+      return '<div class="ic ' + (cls || '') + '"><div class="ic-h">' + ic('shield', 18) + '<b>' + k.title + '</b></div><p>' + k.body + '</p><small>' + k.foot + '</small></div>';
+    }
+    var mine = m.from === me;
+    return '<div class="msg ' + (mine ? 'msg-me' : 'msg-you') + ' ' + (cls || '') + '"><span class="av" style="background:' + (m.from === 'L' ? '#7fb8a4' : '#8fa6d6') + '">' + (m.from === 'L' ? '林' : '周') + '</span><p>' + htmlEsc(m.t) + '</p></div>';
+  }
 
   /* 截图加打码框：框的位置来自 素材-脱敏/打码框.json */
   function shot(file, opt) {
@@ -61,13 +72,13 @@
       '<div class="bc-h"><span class="bc-av">批</span><div class="bc-t"><b>' + b.id + ' · 代取快递</b><small>平台打包 · 刚刚</small></div><em class="st-wait">' + (opt.status || '待抢') + '</em></div>' +
       '<div class="bc-m"><b>本批 ' + b.items + ' 件</b><span>' + b.people + ' 位同学</span><strong>' + money(b.fee) + '</strong></div>' +
       '<div class="rt"><i class="qi">起</i>' + D.station + '</div><div class="rt"><i class="zh">终</i>' + D.area + '</div>' +
-      '<div class="bc-p"><div class="bc-pt">' + ic('lock', 14) + '抢到后可见</div><div class="bc-pr"><label>取件码</label>' + mz('2-4-6001') + '<label>门牌</label>' + mz('A101') + '</div><div class="bc-pr"><label>手机号</label>' + mz('138****0000') + '<label>商品</label>' + mz('连帽卫衣') + '</div></div>' +
-      '<div class="tags"><span class="tag">含 1 件贵重 · 当面交接 · 已投保</span><span class="tag tag_gray">需信用 ≥ ' + b.need + '</span></div>' +
-      (opt.foot === false ? '' : '<div class="bc-f"><small>' + b.feeNote + '</small><a class="pill" data-next>抢这批</a></div>') + '</div>';
+      '<div class="bc-p"><div class="bc-pt">' + ic('lock', 14) + '抢到后可见</div><div class="bc-pr"><label>取件码</label>' + mz('2-4-6001', opt.scan && .5) + '<label>门牌</label>' + mz('A101', opt.scan && 1) + '</div><div class="bc-pr"><label>手机号</label>' + mz('138****0000', opt.scan && 1.5) + '<label>商品</label>' + mz('连帽卫衣', opt.scan && 2) + '</div></div>' +
+      '<div class="tags"><span class="tag">含 1 件贵重 · 当面交接 · ' + (order().insured ? '已投保' : '未投保') + '</span><span class="tag tag_gray">需信用 ≥ ' + b.need + '</span></div>' +
+      (opt.foot === false ? '' : '<div class="bc-f"><small>' + b.feeNote + '</small><a class="pill" data-next data-free-goto="grab">抢这批</a></div>') + '</div>';
   }
   function miniBatch(b, unlocked) {
     var lock = b.need > D.credit.before && !unlocked;
-    return '<div class="bc bc-min"><div class="bc-m"><b>' + b.id + ' · 本批 ' + b.items + ' 件</b><strong>' + money(b.fee) + '</strong></div><div class="bc-sub">' + b.from + ' → ' + b.to + '</div><div class="bc-f"><small>' + b.people + ' 位同学</small><a class="pill' + (lock ? ' pill-off' : '') + '">' + (lock ? '信用 ' + b.need + ' 解锁' : '抢这批') + '</a></div></div>';
+    return '<div class="bc bc-min"><div class="bc-m"><b>' + b.id + ' · 本批 ' + b.items + ' 件</b><strong>' + money(b.fee) + '</strong></div><div class="bc-sub">' + b.from + ' → ' + b.to + '</div><div class="bc-f"><small>' + b.people + ' 位同学</small><a class="pill' + (lock ? ' pill-off' : '') + '" data-toast="' + (lock ? '信用够 ' + b.need + ' 才能抢' : '演示走批 #0317') + '">' + (lock ? '信用 ' + b.need + ' 解锁' : '抢这批') + '</a></div></div>';
   }
 
   var SCREENS = {
@@ -103,7 +114,7 @@
     /* ———— 发单 ———— */
     post: function (a) {
       var st = a.st || 'entry';
-      if (st === 'entry') return { title: '代取快递', back: true, html: '<div class="mp-view pad"><div class="entry entry-main" data-next><span>' + ic('up', 28) + '</span><div><b>上传截图或短信</b><p>AI 解析成清单，并自动打码</p></div></div><div class="entry" data-goto="share"><span>' + ic('clip', 26) + '</span><div><b>菜鸟“找人代取”</b><p>把分享卡交给平台，抢到批的同学才看到</p></div></div><div class="entry" ' + nav('post', { st: 'sms' }) + '><span>' + ic('chat', 26) + '</span><div><b>粘贴取件短信</b><p>短信和单件详情，也一样解析打码</p></div></div><div class="entry entry-off"><span>' + ic('paper', 26) + '</span><div><b>手动填写</b><p>驿站、规格、取件码</p></div></div><div class="warn">代考、代打卡不能发布，发单时拦截</div><div class="grow"></div><p class="hint">AI 部分是演示动画，不做当场解析</p></div>' };
+      if (st === 'entry') return { title: '代取快递', back: true, html: '<div class="mp-view pad"><div class="entry entry-main" data-next><span>' + ic('up', 28) + '</span><div><b>上传截图或短信</b><p>AI 解析成清单，并自动打码</p></div></div><div class="entry" data-goto="share"><span>' + ic('clip', 26) + '</span><div><b>菜鸟“找人代取”</b><p>把分享卡交给平台，抢到批的同学才看到</p></div></div><div class="entry" ' + nav('post', { st: 'sms' }) + '><span>' + ic('chat', 26) + '</span><div><b>粘贴取件短信</b><p>短信和单件详情，也一样解析打码</p></div></div><div class="entry entry-off" data-toast="演示走截图这条路"><span>' + ic('paper', 26) + '</span><div><b>手动填写</b><p>驿站、规格、取件码</p></div></div><div class="warn">代考、代打卡不能发布，发单时拦截</div><div class="grow"></div><p class="hint">AI 部分是演示动画，不做当场解析</p></div>' };
       if (st === 'sms') return { title: '短信和单件', back: true, html: '<div class="mp-view pad"><div class="ai-ok">' + ic('check', 16, 2.6) + '同样解析并打码 <span class="tag">演示动画</span></div><div class="sms-pair">' + shot('取件短信.jpg', { masked: true, base: .3, step: .2 }) + shot('单件详情.jpg', { masked: true, base: .3, step: .2 }) + '</div><div class="note-card">取件码、住址、姓名手机号、商品都盖住了，运单号也不公开。</div><div class="grow"></div><a class="weui-btn weui-btn_primary mp-btn" ' + nav('post', { st: 'list' }) + '>看解析出的清单</a></div>' };
       if (st === 'scan') return { title: 'AI 解析中', html: '<div class="mp-view pad center-h"><div class="scan-wrap">' + shot('多件列表.jpg', { masked: true, scan: true, base: .8, step: .06 }) + '</div><div class="scan-txt"><span class="tag">演示动画</span><p>正在识别 ' + D.screenshotRows + ' 件包裹，自动打码取件码、商品和图片</p></div></div>' };
       var rows = D.parcels.filter(function (p) { return p.owner === '小林' && (a.card || !p.card); }).map(function (p) {
@@ -118,27 +129,30 @@
     },
 
     price: function () {
+      var o = order();
       var spec = D.specs.map(function (s) {
-        var on = s.k === '小' || s.k === '中';
-        return '<div class="sp' + (on ? ' sp-on' : '') + '"><b>' + s.k + '件</b><p>¥' + s.fee + '</p><small>' + s.d + '</small>' + (on ? '<em>×1</em>' : '') + '</div>';
+        var on = !!o.specs[s.k];
+        return '<div class="sp' + (on ? ' sp-on' : '') + '" role="button" tabindex="0" data-spec="' + s.k + '"><b>' + s.k + '件</b><p>¥' + s.fee + '</p><small>' + s.d + '</small>' + (on ? '<em>×1</em>' : '') + '</div>';
       }).join('');
-      var p = D.precious, ins = D.insurance, t = D.orderTotal;
-      return { title: '代取快递', back: true, html: '<div class="mp-view"><div class="scroll grow pad"><div class="spgrid">' + spec + '</div><div class="sp sp-on sp-wide"><div><b>' + p.k + '</b><small>' + p.d + '</small></div><p>¥' + p.fee + '</p><em>×1</em></div><div class="ins"><div class="ins-h"><i class="wechecked">' + ic('check', 13, 3) + '</i><b>' + ins.name + '</b><span>+¥' + ins.fee + '</span></div><p>贵重档默认勾选 · 申报价值 ' + p.value + '（假设）</p><small>' + ins.note + '</small></div><div class="card mt0 f-compact"><div class="f"><label>送到</label><span>' + D.room + '</span></div><div class="f"><label>备注</label><span class="f-ph">手机请当面交给我</span></div></div></div><div class="pay"><div><small>合计（含保费 ¥' + t.insurance + '）</small><b>' + money(t.total) + '</b></div><a class="pay-btn" data-next data-fly-src>发布到大厅</a></div></div>' };
+      var p = D.precious, ins = D.insurance;
+      var insBox = !o.precious ? '' : '<div class="ins' + (o.insured ? '' : ' ins-off') + '" role="button" tabindex="0" data-ins><div class="ins-h"><i class="' + (o.insured ? 'wechecked' : 'unchecked') + '">' + (o.insured ? ic('check', 13, 3) : '') + '</i><b>' + ins.name + '</b><span>+¥' + ins.fee + '</span></div><p>' + (o.insured ? '贵重档默认勾选 · 申报价值 ' + p.value + '（假设）' : '没买保险的贵重件，丢了只按平台限额赔（假设）') + '</p><small>' + ins.note + '</small></div>';
+      var payBtn = o.count ? '<a class="pay-btn" data-next data-jump="hall:1" data-fly-src>发布到大厅</a>' : '<a class="pay-btn pay-off" data-toast="先选一个规格">请选择规格</a>';
+      return { title: '代取快递', back: true, html: '<div class="mp-view"><div class="scroll grow pad"><div class="spgrid">' + spec + '</div><div class="sp sp-wide' + (o.precious ? ' sp-on' : '') + '" role="button" tabindex="0" data-prec><div><b>' + p.k + '</b><small>' + p.d + '</small></div><p>¥' + p.fee + '</p>' + (o.precious ? '<em>×1</em>' : '') + '</div>' + insBox + '<div class="card mt0 f-compact"><div class="f"><label>送到</label><span>' + D.room + '</span></div><div class="f"><label>备注</label><span class="f-ph">手机请当面交给我</span></div></div></div><div class="pay"><div><small>' + (o.insFee ? '合计（含保费 ¥' + o.insFee + '）' : '合计') + '</small><b data-total>' + money(o.total) + '</b></div>' + payBtn + '</div></div>' };
     },
 
     myorder: function (a) {
-      var taken = a.st === 'taken';
-      return { title: '我的订单', tab: 1, html: '<div class="mp-view pad"><div class="stat-head ' + (taken ? 'in' : '') + '"><h3>' + (taken ? '已被接单' : '等待接单') + '</h3><p>' + (taken ? '小周抢到了这批，门牌和取件码只给小周看' : '已和同区的件打包成批，大厅只露脱敏信息') + '</p></div><div class="card mt0"><div class="kv"><span>我的件</span><b>3 件，含 1 件贵重</b></div><div class="kv"><span>所在批次</span><b>' + D.batch.id + '</b></div><div class="kv"><span>保险</span><b class="g">已投保</b></div><div class="kv"><span>已付</span><b>' + money(D.orderTotal.total) + '</b></div></div>' + (taken ? '<div class="card runner in"><span class="av" style="background:#8fa6d6">周</span><div><b>小周</b><p>本校实名 · 信用 82</p></div><a class="pill pill-line" data-goto="chat">聊天</a></div>' : '') + '<div class="note-card">' + (taken ? '费用先托管，你确认收到后才结算' : '费用先托管（模拟）。没人抢可以随时取消') + '</div></div>' };
+      var taken = a.st === 'taken', o = order();
+      return { title: '我的订单', tab: 1, html: '<div class="mp-view pad"><div class="stat-head ' + (taken ? 'in' : '') + '"><h3>' + (taken ? '已被接单' : '等待接单') + '</h3><p>' + (taken ? '小周抢到了这批，门牌和取件码只给小周看' : '已和同区的件打包成批，大厅只露脱敏信息') + '</p></div><div class="card mt0"><div class="kv"><span>我的件</span><b>' + o.count + ' 件' + (o.precious ? '，含 1 件贵重' : '') + '</b></div><div class="kv"><span>所在批次</span><b>' + D.batch.id + '</b></div><div class="kv"><span>保险</span><b class="' + (o.insured ? 'g' : '') + '">' + (o.insured ? '已投保' : '未投保') + '</b></div><div class="kv"><span>已付</span><b>' + money(o.total) + '</b></div></div>' + (taken ? '<div class="card runner in"><span class="av" style="background:#8fa6d6">周</span><div><b>小周</b><p>本校实名 · 信用 82</p></div><a class="pill pill-line" data-goto="chat">聊天</a></div>' : '') + '<div class="note-card">' + (taken ? '费用先托管，你确认收到后才结算' : '费用先托管（模拟）。没人抢可以随时取消') + '</div></div>' };
     },
 
     /* ———— 大厅 ———— */
     hall: function (a) {
       var b = D.batch;
-      var fresh = a.fresh === 1 || a.fresh === undefined;
-      var sheet = a.sheet ? '<div class="sheet"><div class="sheet-mask"></div><div class="sheet-box"><div class="sheet-h"><b>确认抢这批</b></div><div class="check-row">' + ic('check', 16, 2.6) + '本校实名</div><div class="check-row">' + ic('check', 16, 2.6) + '信用 ' + D.credit.before + ' ≥ ' + b.need + '，可抢 ' + D.credit.capBefore + ' 件以内（门槛是假设）</div><div class="check-row">' + ic('check', 16, 2.6) + '贵重件已投保，需当面交接</div><div class="sheet-sum"><span>本批 ' + b.items + ' 件</span><b>' + money(b.fee) + '</b></div>' + btn('确认抢批') + '</div></div>' : '';
-      var main = fresh ? batchCard({ cls: a.fresh === 1 ? 'land' : '', attr: ' data-fly-dst' }) : '';
+      var fresh = a.fresh !== 0;
+      var sheet = a.sheet ? '<div class="sheet"><div class="sheet-mask"></div><div class="sheet-box"><div class="sheet-h"><b>确认抢这批</b></div><div class="check-row">' + ic('check', 16, 2.6) + '本校实名</div><div class="check-row">' + ic('check', 16, 2.6) + '信用 ' + D.credit.before + ' ≥ ' + b.need + '，可抢 ' + D.credit.capBefore + ' 件以内（门槛是假设）</div><div class="check-row">' + ic('check', 16, 2.6) + '贵重件' + (order().insured ? '已投保' : '未投保') + '，需当面交接</div><div class="sheet-sum"><span>本批 ' + b.items + ' 件</span><b>' + money(b.fee) + '</b></div>' + btn('确认抢批') + '</div></div>' : '';
+      var main = fresh ? batchCard({ cls: a.fresh === 1 ? 'land' : a.fresh === 2 ? 'bc-focus' : '', attr: ' data-fly-dst', scan: a.fresh === 2 }) : '';
       return {
-        title: '订单', tab: 1, html: '<div class="mp-view"><div class="seg"><span class="seg-on">全部订单</span><span>我的订单</span><span>我帮助的</span></div><div class="subseg"><span class="on">待抢</span><span>代取</span><span>跑腿</span><span>已完成</span></div><div class="scroll grow pad8">' + main + miniBatch(D.otherBatches[0]) + miniBatch(D.otherBatches[1], a.unlock) + '<div class="mp-safe"></div></div>' + sheet + '</div>'
+        title: '订单', tab: 1, html: '<div class="mp-view"><div class="seg"><span class="seg-on">全部订单</span><a ' + nav('myorder', { st: 'taken' }) + '>我的订单</a><a data-goto="pick">我帮助的</a></div><div class="subseg"><span class="on">待抢</span><span data-toast="演示只有待抢这一档">代取</span><span data-toast="演示只有待抢这一档">跑腿</span><span data-toast="演示只有待抢这一档">已完成</span></div><div class="scroll grow pad8">' + main + miniBatch(D.otherBatches[0]) + miniBatch(D.otherBatches[1], a.unlock) + '<div class="mp-safe"></div></div>' + sheet + '</div>'
       };
     },
 
@@ -165,17 +179,10 @@
 
     /* ———— 聊天 ———— */
     chat: function (a, c) {
-      var me = a.me || c.who, n = a.n == null ? 6 : a.n;
+      var me = a.me || c.who, st = window.APP.chat();
       var other = me === 'L' ? D.who.R : D.who.L;
-      var msgs = D.chat.slice(0, n).map(function (m, i) {
-        var last = i === n - 1;
-        if (m.card) { var k = D.insureCard; return '<div class="ic' + (last ? ' in' : '') + '"><div class="ic-h">' + ic('shield', 18) + '<b>' + k.title + '</b></div><p>' + k.body + '</p><small>' + k.foot + '</small></div>'; }
-        var mine = m.from === me;
-        return '<div class="msg ' + (mine ? 'msg-me' : 'msg-you') + (last ? (mine ? ' in' : ' in-late') : '') + '"><span class="av" style="background:' + (m.from === 'L' ? '#7fb8a4' : '#8fa6d6') + '">' + (m.from === 'L' ? '林' : '周') + '</span><p>' + m.t + '</p></div>';
-      }).join('');
-      var next = D.chat[n];
-      var draft = next && next.from === me ? next.t : '';
-      return { title: other.name + ' · ' + D.batch.id, back: true, html: '<div class="mp-view"><div class="chat-sys">只用私聊，手机号不暴露</div><div class="chat scroll grow" data-bottom>' + msgs + '</div><div class="chat-in"><span class="' + (draft ? 'has' : '') + '">' + (draft || '发消息') + '</span><a class="pill" data-next>发送</a></div><div class="mp-safe s w"></div></div>' };
+      var msgs = st.msgs.map(function (m) { return chatMsg(m, me); }).join('');
+      return { title: other.name + ' · ' + D.batch.id, back: true, html: '<div class="mp-view"><div class="chat-sys">只用私聊，手机号不暴露<a data-goto="deliver">接着看交付 ›</a></div><div class="chat scroll grow" data-bottom>' + msgs + '</div><div class="chat-in"><input class="chat-input" data-chat-input type="text" enterkeyhint="send" autocomplete="off" aria-label="输入消息" value="' + htmlEsc(st.draft(me)) + '"><button class="pill" data-chat-send type="button">发送</button></div><div class="mp-safe s w"></div></div>' };
     },
 
     /* ———— 交付 ———— */
@@ -198,7 +205,7 @@
     /* ———— 我的 ———— */
     me: function () {
       var k = D.credit;
-      var rows = [['我发的单', 'data-goto="hall"'], ['我帮助的', 'data-goto="pick"'], ['丢件申报和投诉', 'data-goto="claim"'], ['投保记录', 'data-goto="price"'], ['客服和平台协议', '']];
+      var rows = [['我发的单', 'data-goto="hall"'], ['我帮助的', 'data-goto="pick"'], ['丢件申报和投诉', 'data-goto="claim"'], ['投保记录', 'data-goto="price"'], ['客服和平台协议', 'data-toast="客服入口，演示不展开"']];
       return { title: '我的', tab: 3, html: '<div class="mp-view scroll"><div class="me-top"><span class="av av-lg" style="background:#8fa6d6">周</span><div><b>小周</b><p><span class="tag tag_w">本校实名</span></p></div></div><div class="me-credit" data-goto="settle"><div><small>信用</small><b>' + k.before + '</b></div><div><small>可抢上限</small><b>' + k.capBefore + ' 件</b></div><div><small>今日收入</small><b>¥26</b></div><div><small>累计</small><b>¥318</b></div></div><div class="pad8"><div class="card mt0 list">' + rows.map(function (r) { return '<a class="row" ' + r[1] + '>' + r[0] + '<i>›</i></a>'; }).join('') + '</div><p class="hint">信用和额度放在最上面：它决定你能抢多大。</p></div></div>' };
     },
 
@@ -211,7 +218,7 @@
     claimR: function (a) {
       var st = a.st || 0, c = D.claim.cases[window.APP ? window.APP.claimCase() : 'normal'];
       if (st === 1) return { title: '争议结果', html: '<div class="mp-view pad"><div class="stat-warn"><h3>责任在取件到交付这一段</h3><p>' + (c === D.claim.cases.normal ? '平台先赔，再向你追偿' : '走保险理赔，你不用先垫付') + '</p></div><div class="card mt0"><div class="kv"><span>信用（假设）</span><b class="r">82 → 74</b></div><div class="kv"><span>可抢上限（假设）</span><b class="r">6 件 → 3 件</b></div><div class="kv"><span>申诉</span><b>人工确认前可补证据</b></div></div><div class="note-card">这就是实名的作用：能找到人，也能追偿。</div></div>' };
-      return { title: '争议处理', html: '<div class="mp-view pad"><div class="stat-warn"><h3>小林申报丢失 1 件</h3><p>这批的酬金先冻结</p></div><div class="card mt0">' + nodeList(3) + '</div><div class="ord-act"><a class="pill pill-line">' + ic('cam', 16) + '补充证据</a></div></div>' };
+      return { title: '争议处理', html: '<div class="mp-view pad"><div class="stat-warn"><h3>小林申报丢失 1 件</h3><p>这批的酬金先冻结</p></div><div class="card mt0">' + nodeList(3) + '</div><div class="ord-act"><a class="pill pill-line" data-toast="已打开相册（模拟）">' + ic('cam', 16) + '补充证据</a></div></div>' };
     },
 
     /* ———— 圈子 ———— */
@@ -221,7 +228,7 @@
         return '<div class="post"><div class="post-h"><span class="av" style="background:' + p.c + '">' + p.who[p.who.length - 1] + '</span><div><b>' + p.who + '</b><small>' + p.time + ' · ' + p.tab + '</small></div><a class="rep" ' + nav('circle', { tab: cur, sheet: 1 }) + '>' + ic('flag', 15) + '举报</a></div><p>' + p.text + '</p>' + (p.reply ? '<div class="post-r">' + p.reply + '</div>' : '') + '<div class="post-f"><span>♡ ' + p.likes + '</span><span>' + p.cm + ' 条评论</span></div></div>';
       }).join('');
       var sheet = a.sheet ? '<div class="sheet"><div class="sheet-mask"></div><div class="sheet-box"><div class="sheet-h"><b>举报这条内容</b></div>' + C.reportReasons.map(function (r, i) { return '<div class="rr' + (i === 0 ? ' rr-on' : '') + '"><i></i>' + r + '</div>'; }).join('') + '<a class="weui-btn weui-btn_primary mp-btn" data-next ' + nav('circle', { tab: cur }) + '>提交举报</a></div></div>' : '';
-      return { title: '圈子', tab: 2, html: '<div class="mp-view"><div class="seg seg-s">' + C.tabs.map(function (t, i) { return '<a class="' + (i === cur ? 'seg-on' : '') + '" ' + nav('circle', { tab: i }) + '>' + t + '</a>'; }).join('') + '</div><div class="scroll grow pad8"><div class="notice notice-s">' + C.notice + '</div>' + posts + '<div class="mp-safe"></div></div><span class="fab">' + ic('send', 24) + '</span>' + sheet + '</div>' };
+      return { title: '圈子', tab: 2, html: '<div class="mp-view"><div class="seg seg-s">' + C.tabs.map(function (t, i) { return '<a class="' + (i === cur ? 'seg-on' : '') + '" ' + nav('circle', { tab: i }) + '>' + t + '</a>'; }).join('') + '</div><div class="scroll grow pad8"><div class="notice notice-s">' + C.notice + '</div>' + posts + '<div class="mp-safe"></div></div><span class="fab" data-toast="发帖入口，演示不展开">' + ic('send', 24) + '</span>' + sheet + '</div>' };
     }
   };
 
@@ -231,6 +238,9 @@
 
   /* ———— 说明栏组件 ———— */
   var WIDGETS = {
+    hallFocus: function () {
+      return '<div class="hf">' + batchCard({ foot: false, scan: true }) + '</div><div class="fields hf-two"><div><label>' + D.focusOthers + '</label>' + D.publicFields.join('、') + '</div><div class="f-amber"><label>' + D.focusAfter + '</label>' + D.privateFields.join('、') + '</div></div><span class="demo-tag">打码是演示动画</span>';
+    },
     dock: function () { return '<div class="dock"><span class="dock-tag">平台</span></div>'; },
     services: function () {
       return '<ul class="mini-list">' + D.services.map(function (s) { return '<li><b>' + s.t + '</b>' + (s.full ? '完整流程' : s.hint) + '</li>'; }).join('') + '</ul>';
@@ -270,6 +280,7 @@
     }
   };
 
+  window.CHAT_MSG = chatMsg;
   window.SCREENS = SCREENS;
   window.WIDGETS = WIDGETS;
   window.MP_ICON = ic;

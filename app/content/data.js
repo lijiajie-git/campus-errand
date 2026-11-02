@@ -70,7 +70,7 @@ window.CONTENT = {
   precious: { k: '贵重档', d: '手机、电脑，当面交接', fee: 4, value: '¥1500' },
   insurance: { fee: 3, name: '校园小件货损险', note: '实际由持牌保险机构承保和收费' },
   priceNote: '价格、保费和险种都是假设。',
-  orderTotal: { fee: 9, insurance: 3, total: 12 },
+  orderDefault: { specs: { '小': 1, '中': 1 }, precious: 1, insured: 1 },
 
   /* 官方代取卡：字段依据本人实测的分享卡，内容是虚构示例 */
   shareCard: {
@@ -90,6 +90,8 @@ window.CONTENT = {
   ],
   publicFields: ['驿站', '楼栋区域', '件数和规格', '酬金'],
   privateFields: ['取件码', '门牌', '手机号', '商品'],
+  focusOthers: '别人看到的',
+  focusAfter: '抢到后才能看到的',
 
   /* ———— 对比 ———— */
   compare: {
@@ -128,6 +130,8 @@ window.CONTENT = {
     { from: 'L', t: '好的，我 10 分钟后在楼下。' },
     { from: 'R', t: '到 3 号楼了，马上到。' }
   ],
+  insureCardNo: { title: '这批含贵重件，未投保', body: '下单时取消了保险。出事只按平台限额赔（假设），交接时请当面确认。', foot: '保险实际由持牌保险机构承保和收费' },
+  chatFallback: { L: '好的，谢谢～', R: '好的，马上到。' },
   insureCard: { title: '这批含贵重件，已投保', body: '二手手机，保费 ¥3（假设）。交接时双方当面确认，出事走保险理赔。', foot: '实际由持牌保险机构承保和收费' },
 
   /* ———— 丢件索赔 ———— */

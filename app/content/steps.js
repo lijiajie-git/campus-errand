@@ -2,7 +2,7 @@
    layout   手机数量（0、1、2、4），舞台按它切换
    solo     layout 为 1 时用哪台（L 发单同学，R 接单同学）
    side     说明文字；w 是说明栏里的组件（见 screens.js 的 WIDGETS）
-   beats    这一步里的小状态。L、R 是两台手机当前显示的界面 [界面名, 参数]，没写就沿用上一拍
+   beats    这一步里的小状态。send 是这一拍由哪台手机发送输入框里的内容，和手动点发送走同一个函数；fx 是装饰动画。L、R 是两台手机当前显示的界面 [界面名, 参数]，没写就沿用上一拍
             ms 是自动演示时停留的毫秒数；pass 表示这一拍是过程动画，手动时也会自己走完；focus 是手机宽度下优先显示哪台 */
 window.STEPS = [
   {
@@ -14,7 +14,7 @@ window.STEPS = [
       { cap: '圈子 · 校内交流', s: ['circle'], go: 'circle' },
       { cap: '我的 · 信用和收入', s: ['me'], go: 'settle' }
     ],
-    beats: [{ ms: 4200 }]
+    beats: [{ ms: 3800 }]
   },
   {
     id: 'register', name: '实名', layout: 1, solo: 'L',
@@ -28,7 +28,7 @@ window.STEPS = [
   {
     id: 'home', name: '主页', layout: 1, solo: 'L',
     side: { eyebrow: '主页', title: '六类服务，先把代取做透', rule: '只有代取快递走完整流程', note: '其他入口可以点进去看，到发单表单为止。代占座改成代排队，代考、代打卡在发单时拦截。', w: ['services'] },
-    beats: [{ L: ['home', { pick: 1 }], ms: 3200 }]
+    beats: [{ L: ['home', { pick: 1 }], ms: 2800 }]
   },
   {
     id: 'post', name: '发单', layout: 1, solo: 'L',
@@ -57,13 +57,14 @@ window.STEPS = [
     side: { eyebrow: '发布后进入大厅', title: '左边发出，右边收到', rule: '大厅只露脱敏信息', note: '平台把同站同区的件打包成一批。', w: ['fields'] },
     beats: [
       { L: ['price'], R: ['hall', { fresh: 0 }], ms: 900 },
-      { L: ['myorder', { st: 'wait' }], R: ['hall', { fresh: 1 }], ms: 3700, fx: 'fly', focus: 'R' }
+      { L: ['myorder', { st: 'wait' }], R: ['hall', { fresh: 1 }], ms: 2600, fx: 'fly', focus: 'R' },
+      { R: ['hall', { fresh: 2 }], w: ['hallFocus'], rule: '重点：隐私先盖住，才进大厅', note: '', ms: 3600, fx: 'zoomcard', focus: 'R' }
     ]
   },
   {
     id: 'compare', name: '对比', layout: 0,
     side: { eyebrow: '亮点二 · 抢一批', w: ['compare'] },
-    beats: [{ ms: 7000 }]
+    beats: [{ ms: 6500 }]
   },
   {
     id: 'grab', name: '抢批', layout: 2,
@@ -92,14 +93,13 @@ window.STEPS = [
   },
   {
     id: 'chat', name: '聊天', layout: 2,
-    side: { eyebrow: '实时聊天', title: '左边发，右边马上收到', rule: '贵重件的对话里，自动出现投保提示', note: '默认只用私聊，不暴露手机号。', w: ['dock'] },
+    side: { eyebrow: '实时聊天', title: '左边发，右边马上收到', rule: '贵重件的对话里，自动出现投保提示', note: '两台手机都能打字，默认文字已填好，点发送就能看到另一端收到。', w: ['dock'] },
     beats: [
-      { L: ['chat', { me: 'L', n: 1 }], R: ['chat', { me: 'R', n: 1 }], ms: 1100 },
-      { L: ['chat', { me: 'L', n: 2 }], R: ['chat', { me: 'R', n: 2 }], ms: 1000, focus: 'R' },
-      { L: ['chat', { me: 'L', n: 3 }], R: ['chat', { me: 'R', n: 3 }], ms: 1700 },
-      { L: ['chat', { me: 'L', n: 4 }], R: ['chat', { me: 'R', n: 4 }], ms: 900, focus: 'R' },
-      { L: ['chat', { me: 'L', n: 5 }], R: ['chat', { me: 'R', n: 5 }], ms: 900, focus: 'L' },
-      { L: ['chat', { me: 'L', n: 6 }], R: ['chat', { me: 'R', n: 6 }], ms: 1000, focus: 'R' }
+      { L: ['chat', { me: 'L' }], R: ['chat', { me: 'R' }], send: 'L', ms: 1100 },
+      { send: 'R', ms: 2700, focus: 'R' },
+      { send: 'R', ms: 900, focus: 'R' },
+      { send: 'L', ms: 900, focus: 'L' },
+      { send: 'R', ms: 1000, focus: 'R' }
     ]
   },
   {
@@ -113,7 +113,7 @@ window.STEPS = [
   {
     id: 'settle', name: '结算', layout: 1, solo: 'R',
     side: { eyebrow: '结算和信用', title: '信用有实际用途', rule: '履约一次，就能抢更大的批', note: '信用不是摆设。它决定你能抢多大的批，也决定能不能接贵重件。', w: ['tiers'] },
-    beats: [{ R: ['settle'], ms: 4600 }]
+    beats: [{ R: ['settle'], ms: 4200 }]
   },
   {
     id: 'claim', name: '丢件', layout: 2,
@@ -124,7 +124,7 @@ window.STEPS = [
       { w: ['chain', { n: 2 }], ms: 1700, pass: true },
       { w: ['chain', { n: 3 }], ms: 1700, pass: true },
       { w: ['chain', { n: 4 }], ms: 1700, pass: true },
-      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], ms: 3800, focus: 'L' }
+      { L: ['claimL', { st: 1 }], R: ['claimR', { st: 1 }], w: ['chain', { n: 5 }], ms: 3400, focus: 'L' }
     ]
   },
   {

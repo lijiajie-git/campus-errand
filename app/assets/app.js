@@ -7,7 +7,63 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SOLO_W = 900, PW = 428, PH = 800, CAP = 22;
 
-  var S = { step: 0, beat: 0, auto: false, timer: null, free: {}, claimCase: 'normal', started: false, soloWho: 'L', lastLayout: null };
+  var S = { step: 0, beat: 0, auto: false, timer: null, free: {}, claimCase: 'normal', started: false, soloWho: 'L', lastLayout: null, order: null };
+  var CHAT = { msgs: [], sent: [], done: 0, manual: false };
+
+  /* ———— 订单：规格和保险是真状态，合计算出来 ———— */
+  function resetOrder() { S.order = JSON.parse(JSON.stringify(D.orderDefault)); }
+  function orderInfo() {
+    var o = S.order, fee = 0, count = 0;
+    D.specs.forEach(function (s) { if (o.specs[s.k]) { fee += s.fee; count++; } });
+    if (o.precious) { fee += D.precious.fee; count++; }
+    var insured = !!(o.precious && o.insured), insFee = insured ? D.insurance.fee : 0;
+    return { specs: o.specs, precious: !!o.precious, insured: insured, count: count, fee: fee, insFee: insFee, total: fee + insFee };
+  }
+
+  /* ———— 聊天：手动和自动演示都走 chatSend ———— */
+  function chatDraft(me) {
+    for (var i = 0; i < D.chat.length; i++) if (!CHAT.sent[i] && D.chat[i].from === me) return D.chat[i].t;
+    return D.chatFallback[me];
+  }
+  function chatAppend(m, sender) {
+    ['L', 'R'].forEach(function (id) {
+      var box = $('[data-bottom]', ph[id]);
+      if (!box) return;
+      var cls = m.card ? 'in-late' : id === sender ? 'in' : 'in-late';
+      box.insertAdjacentHTML('beforeend', window.CHAT_MSG(m, id, cls));
+      box.scrollTop = box.scrollHeight;
+    });
+  }
+  function chatSend(me) {
+    var input = $('[data-chat-input]', ph[me]);
+    var text = (input ? input.value : chatDraft(me)).trim();
+    if (!text) return false;
+    for (var i = 0; i < D.chat.length; i++) if (!CHAT.sent[i] && D.chat[i].from === me) { CHAT.sent[i] = true; break; }
+    var m = { from: me, t: text };
+    CHAT.msgs.push(m);
+    chatAppend(m, me);
+    if (input) { input.value = chatDraft(me); delete input.dataset.touched; }
+    /* 投保提示卡：它前面的消息都发完了，就自动出现 */
+    D.chat.forEach(function (c, i) {
+      if (!c.card || CHAT.sent[i]) return;
+      for (var j = 0; j < i; j++) if (!CHAT.sent[j]) return;
+      CHAT.sent[i] = true;
+      var card = { card: c.card };
+      CHAT.msgs.push(card);
+      chatAppend(card, null);
+    });
+    return true;
+  }
+  function chatReset() {
+    CHAT.msgs = []; CHAT.sent = []; CHAT.done = 0; CHAT.manual = false;
+    ['L', 'R'].forEach(function (id) { if (ph[id] && ph[id].dataset.name === 'chat') delete ph[id].dataset.key; });
+  }
+  function chatSync() {
+    var st = STEPS[S.step], sends = [];
+    for (var i = 0; i <= S.beat; i++) if (st.beats[i].send) sends.push(st.beats[i].send);
+    if (CHAT.manual) return;
+    while (CHAT.done < sends.length) chatSend(sends[CHAT.done++]);
+  }
 
   /* ———— 手机外框 ———— */
   var SIGNAL = '<svg width="66" height="14" viewBox="0 0 66 14" fill="currentColor"><rect x="0" y="9" width="3" height="4" rx=".8"/><rect x="5" y="6" width="3" height="7" rx=".8"/><rect x="10" y="3" width="3" height="10" rx=".8"/><rect x="15" y="0" width="3" height="13" rx=".8"/><rect x="30" y="1" width="30" height="12" rx="3.500" fill="none" stroke="currentColor" opacity=".45"/><rect x="32" y="3" width="24" height="8" rx="2"/><rect x="61" y="5" width="2" height="4" rx="1" opacity=".5"/></svg>';
@@ -20,7 +76,7 @@
     }).join('') + '</div>';
   }
   function phoneHTML(id) {
-    return '<div class="ph off" data-ph="' + id + '"><div class="ph-cap"></div><div class="ph-frame"><div class="device device-iphone-14-pro"><div class="device-frame"><div class="device-screen"><div class="mp"><div class="mp-status"><span>9:41</span>' + SIGNAL + '</div><div class="mp-nav"><a class="nav-back" hidden data-back>' + window.MP_ICON('back', 22, 2) + '</a><span data-title></span>' + CAPSULE + '</div><div class="mp-body" data-body></div><div data-tab></div><div class="mp-home"></div></div></div></div><div class="device-stripe"></div><div class="device-header"></div><div class="device-sensors"></div><div class="device-btns"></div><div class="device-power"></div></div></div><a class="ph-over" hidden><span>点进去看</span></a></div>';
+    return '<div class="ph off" data-ph="' + id + '"><div class="ph-cap"></div><div class="ph-frame"><div class="device device-iphone-14-pro"><div class="device-frame"><div class="device-screen"><div class="mp"><div class="mp-status"><span>9:41</span>' + SIGNAL + '</div><div class="mp-nav"><a class="nav-back" hidden data-back>' + window.MP_ICON('back', 22, 2) + '</a><span data-title></span>' + CAPSULE + '</div><div class="mp-body" data-body></div><div data-tab></div><div class="mp-home"></div></div></div></div><div class="device-stripe"></div><div class="device-header"></div><div class="device-sensors"></div><div class="device-btns"></div><div class="device-power"></div></div></div><button class="ph-over" type="button" hidden title="点进去看"><span>点进去看</span></button></div>';
   }
 
   var IDS = ['L', 'R', 'C', 'D'], ph = {}, stageMain, sideEl, phonesEl;
@@ -33,8 +89,8 @@
       if (b.L) out.L = b.L;
       if (b.R) out.R = b.R;
       if (b.w) out.w = b.w;
-      if (b.rule) out.rule = b.rule;
-      if (b.note) out.note = b.note;
+      if (b.rule !== undefined) out.rule = b.rule;
+      if (b.note !== undefined) out.note = b.note;
     }
     return out;
   }
@@ -64,6 +120,7 @@
       sideEl.removeAttribute('style');
       $('.solo-switch').hidden = st.layout !== 2;
       $$('.solo-switch button').forEach(function (b) { b.classList.toggle('is-on', b.dataset.solo === who); });
+      $$('[data-bottom]', phonesEl).forEach(function (x) { x.scrollTop = x.scrollHeight; });
     } else {
       IDS.forEach(function (id) { $('.ph-frame', ph[id]).style.transform = ''; });
       var W = stageMain.clientWidth, H = stageMain.clientHeight, pad = 32, gap = 16, m = 8;
@@ -108,7 +165,7 @@
     var el = ph[id], use = S.free[id] || spec;
     if (!use) return;
     var name = use[0], args = use[1] || {};
-    var key = name + JSON.stringify(args) + S.claimCase;
+    var key = name + JSON.stringify(args) + S.claimCase + JSON.stringify(S.order);
     if (el.dataset.key === key) return;
     var slide = el.dataset.name !== name;
     var out;
@@ -181,6 +238,7 @@
     var layoutChanged = S.lastLayout !== st.layout + '|' + (st.solo || '');
     var freshStep = prevStep !== S.step;
     S.lastLayout = st.layout + '|' + (st.solo || '');
+    if (st.id === 'chat' && (freshStep || CHAT.done > st.beats.slice(0, S.beat + 1).filter(function (x) { return x.send; }).length)) chatReset();
     if (b.focus) S.soloWho = b.focus;
     else if (freshStep && st.layout === 2 && !b.focus) S.soloWho = 'L';
 
@@ -203,9 +261,11 @@
       if (st.layout > 0) { renderPhone('L', bs.L); renderPhone('R', bs.R); }
     }
     layoutPhones(true);
+    if (st.id === 'chat') chatSync();
     renderRail();
     if (b.toast) setTimeout(function () { toast(b.toast[0], b.toast[1]); }, 120);
     if (b.fx === 'fly') { try { fly(layoutChanged ? 480 : 40); } catch (e) { console.error(e); } }
+    if (b.fx === 'zoomcard') { try { zoomCard(); } catch (e) { console.error(e); } }
   }
 
   function goTo(step, beat) {
@@ -225,6 +285,8 @@
 
   function advance() {
     var st = STEPS[S.step];
+    /* 自己发过消息后，下一步直接去交付，不再替人发 */
+    if (st.id === 'chat' && CHAT.manual && S.step + 1 < STEPS.length) { goTo(S.step + 1, 0); return true; }
     if (S.beat + 1 < st.beats.length) { goTo(S.step, S.beat + 1); return true; }
     if (S.step + 1 < STEPS.length) { goTo(S.step + 1, 0); return true; }
     return false;
@@ -255,7 +317,7 @@
     armPass();
   }
   function replay() {
-    S.free = {}; S.claimCase = 'normal';
+    S.free = {}; S.claimCase = 'normal'; resetOrder();
     S.lastLayout = null;
     S.step = 0; S.beat = 0;
     apply(-1);
@@ -295,6 +357,20 @@
     }, delay);
   }
 
+  /* 大厅重点：手机里那张卡放大到说明栏，打码块依次扫过隐私字段 */
+  function zoomCard() {
+    if (reduced || innerWidth < SOLO_W) return;
+    setTimeout(function () {
+      var c = $('.hf .bc', sideEl), src = $('[data-fly-dst]', ph.R);
+      if (!c || !src) return;
+      var a = src.getBoundingClientRect(), b = c.getBoundingClientRect();
+      c.animate([
+        { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + a.width / b.width + ')', transformOrigin: '0 0', opacity: .5 },
+        { transform: 'none', transformOrigin: '0 0', opacity: 1 }
+      ], { duration: 460, easing: 'cubic-bezier(.22,.8,.2,1)' });
+    }, 30);
+  }
+
   function toast(id, text) {
     if (!ph[id]) return;
     var mp = $('.mp', ph[id]), el = document.createElement('div');
@@ -315,6 +391,29 @@
       var t = e.target.closest && e.target;
       if (!t) return;
       var n;
+      /* 总览：整台手机和标题都能点 */
+      var inPhone = t.closest('.ph');
+      if (inPhone && STEPS[S.step].layout === 4) {
+        var f4 = STEPS[S.step].four[IDS.indexOf(inPhone.dataset.ph)];
+        takeOver(); goTo(idxOf(f4.go));
+        return;
+      }
+      if ((n = t.closest('[data-chat-send]'))) {
+        takeOver(); CHAT.manual = true;
+        chatSend(n.closest('[data-ph]').dataset.ph);
+        return;
+      }
+      if ((n = t.closest('[data-spec],[data-prec],[data-ins]'))) {
+        takeOver();
+        var O = S.order;
+        if (n.dataset.spec) O.specs[n.dataset.spec] = O.specs[n.dataset.spec] ? 0 : 1;
+        else if (n.hasAttribute('data-prec')) { O.precious = O.precious ? 0 : 1; O.insured = O.precious; }
+        else O.insured = O.insured ? 0 : 1;
+        var who = n.closest('[data-ph]').dataset.ph;
+        renderPhone(who, beatState(S.step, S.beat)[who]);
+        return;
+      }
+      if ((n = t.closest('[data-toast]')) && n.closest('[data-ph]')) { takeOver(); toast(n.closest('[data-ph]').dataset.ph, n.dataset.toast); return; }
       if ((n = t.closest('[data-case]'))) { S.claimCase = n.dataset.case; apply(S.step); return; }
       if ((n = t.closest('[data-nav]'))) {
         var phone = n.closest('[data-ph]');
@@ -333,7 +432,13 @@
         if (!n.closest('#demo')) $('#demo').scrollIntoView();
         return;
       }
-      if ((n = t.closest('[data-next]')) && n.closest('[data-ph]')) { takeOver(); advance(); return; }
+      if ((n = t.closest('[data-next]')) && n.closest('[data-ph]')) {
+        takeOver();
+        if (n.dataset.freeGoto && S.free[n.closest('[data-ph]').dataset.ph]) goTo(idxOf(n.dataset.freeGoto));
+        else if (n.dataset.jump) goTo(idxOf(n.dataset.jump.split(':')[0]), +n.dataset.jump.split(':')[1]);
+        else advance();
+        return;
+      }
       if ((n = t.closest('[data-back]'))) {
         var ph2 = n.closest('[data-ph]').dataset.ph;
         takeOver();
@@ -353,6 +458,11 @@
       }
     });
     document.addEventListener('keydown', function (e) {
+      if (e.target.matches && e.target.matches('[data-chat-input]')) {
+        if (e.key === 'Enter') { e.preventDefault(); takeOver(); CHAT.manual = true; chatSend(e.target.closest('[data-ph]').dataset.ph); }
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-spec],[data-prec],[data-ins]')) { e.preventDefault(); e.target.click(); return; }
       if (!stageInView()) return;
       if (e.key === 'ArrowRight') { takeOver(); advance(); }
       if (e.key === 'ArrowLeft') { takeOver(); if (S.step > 0) goTo(S.step - 1); }
@@ -448,7 +558,12 @@
 
   /* ———— 启动 ———— */
   function init() {
-    window.APP = { claimCase: function () { return S.claimCase; } };
+    resetOrder();
+    window.APP = {
+      claimCase: function () { return S.claimCase; },
+      order: orderInfo,
+      chat: function () { return { msgs: CHAT.msgs, draft: chatDraft }; }
+    };
     renderBrief();
     stageMain = $('#st-main'); sideEl = $('#st-side'); phonesEl = $('#phones');
     phonesEl.innerHTML = IDS.map(phoneHTML).join('');
