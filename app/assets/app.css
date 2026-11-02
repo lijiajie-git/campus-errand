@@ -231,9 +231,10 @@ html.locked #plan, html.locked #how, html.locked #scope { display: none; }
 .cmp-next { display: inline-block; margin-top: 12px; height: 34px; padding: 0 14px; border-radius: 3px; background: var(--amber); color: var(--ink); font-size: 13.500px; font-weight: 600; }
 .solo-switch { display: none; }
 
-.ft-common, .ft-new { font-style: normal; font: 11px var(--mono); padding: 0 5px; border-radius: 2px; white-space: nowrap; vertical-align: 1px; }
+.ft-common, .ft-new, .ft-focus { font-style: normal; font: 11px var(--mono); padding: 0 5px; border-radius: 2px; white-space: nowrap; vertical-align: 1px; }
 .ft-common { color: var(--dim); border: 1px solid var(--line); }
 .ft-new { color: var(--amber); border: 1px solid rgba(255,176,32,.55); }
+.ft-focus { color: var(--amber); border: 1px solid rgba(255,176,32,.55); }
 .hg { list-style: none; margin-top: 14px; }
 .hg-i { display: flex; gap: 12px; padding: 9px 10px 9px 6px; border-left: 2px solid transparent; cursor: pointer; transition: opacity .25s, background .15s; }
 .hg-i.off { opacity: 0; pointer-events: none; }
