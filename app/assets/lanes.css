@@ -1,0 +1,22 @@
+/* 泳道结构。颜色由各方向用 --lz-* 变量决定。 */
+.lanes { --head: 148px; --row: 46px; position: relative; padding-top: 24px; }
+.lz-axis { position: absolute; top: 0; left: var(--head); right: 0; height: 20px; font: 11px ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--lz-dim); }
+.lz-tick { position: absolute; transform: translateX(-50%); }
+.lz-row { display: flex; height: var(--row); border-top: 1px solid var(--lz-line); }
+.lz-row:last-of-type { border-bottom: 1px solid var(--lz-line); }
+.lz-head { width: var(--head); flex: none; display: flex; flex-direction: column; justify-content: center; line-height: 1.3; }
+.lz-head b { font-size: 13px; font-weight: 600; }
+.lz-head small { font-size: 11px; color: var(--lz-dim); }
+.lz-track { position: relative; flex: 1; }
+.lz-bar { position: absolute; top: 50%; height: 6px; margin-top: -3px; background: var(--lz-bar); border-radius: 1px; min-width: 4px; }
+.lz-bar.is-open { background: linear-gradient(90deg, var(--lz-bar) 80%, transparent); }
+.lz-bar.is-stopped { background: var(--lz-key); }
+.lz-dot { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--lz-dot); border: 3px solid var(--lz-bg); box-sizing: content-box; padding: 0; z-index: 3; cursor: pointer; transition: transform .15s; }
+.lz-dot:hover, .lz-dot.is-on { transform: scale(1.35); background: var(--lz-accent); }
+.lz-dot.is-key { background: var(--lz-key); }
+.lz-dot.is-dim { opacity: .22; }
+.lz-links { position: absolute; top: 24px; bottom: 0; left: var(--head); right: 0; pointer-events: none; }
+.lz-link { position: absolute; width: 1px; background: var(--lz-link); top: calc((var(--a) + .5) * var(--row)); height: calc((var(--b) - var(--a)) * var(--row)); }
+.lz-link.is-on { background: var(--lz-accent); width: 2px; }
+.lz-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--lz-accent); transition: left .5s; }
+.lz-playhead[hidden] { display: none; }

@@ -1,0 +1,103 @@
+/* 手机外框修正 + 小程序界面。三个方向共用。 */
+
+/* 外框比真机略矮：800 比 868 省 8%，1280×720 下字更大 */
+.device-iphone-14-pro,
+.device-iphone-14-pro .device-frame { height: 800px; }
+.device-iphone-14-pro .device-screen { height: 762px; }
+
+/* 深色外框，避免默认的紫色金属边 */
+.device-iphone-14-pro .device-frame {
+  border-color: #000;
+  box-shadow: inset 0 0 3px 2px #6b6e74, inset 0 0 0 6px #23252a;
+}
+.device-iphone-14-pro .device-btns,
+.device-iphone-14-pro .device-btns::before,
+.device-iphone-14-pro .device-btns::after,
+.device-iphone-14-pro .device-power { background: #23252a; }
+
+/* 关键修正 1：屏幕是 div，不是 img，要自己裁切
+   关键修正 2：给屏幕加 transform，WeUI 的 fixed 弹层才只盖屏幕，不盖外框 */
+.device .device-screen {
+  overflow: hidden;
+  transform: translateZ(0);
+  background: #ededed;
+  isolation: isolate;
+}
+
+/* 灵动岛和小程序导航栏要叠在屏幕内容之上 */
+.device-header, .device-sensors { z-index: 2; pointer-events: none; }
+.device-stripe, .device-home { pointer-events: none; }
+
+/* 缩放容器。--s 由 core.js 计算 */
+.phone-slot { width: calc(428px * var(--s, 1)); height: calc(800px * var(--s, 1)); flex: none; position: relative; }
+.phone-scale { width: 428px; height: 800px; transform: scale(var(--s, 1)); transform-origin: 0 0; }
+
+/* ———— 小程序界面 ———— */
+.mp { position: absolute; inset: 0; display: flex; flex-direction: column; background: #ededed; color: #111;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; font-size: 16px; line-height: 1.45; }
+.mp a, .mp button { cursor: pointer; }
+
+.mp-status { height: 54px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 30px 0 34px;
+  font-size: 15px; font-weight: 600; background: #f7f7f7; }
+.mp-status svg { display: block; }
+
+.mp-nav { height: 44px; flex: none; position: relative; display: flex; align-items: center; justify-content: center;
+  background: #f7f7f7; font-size: 17px; font-weight: 600; }
+/* 胶囊：87×32，距右约 7，上下边距 6（社区经验值，不是官方规范） */
+.mp-capsule { position: absolute; right: 7px; top: 6px; width: 87px; height: 32px; box-sizing: border-box; display: flex; align-items: center;
+  border-radius: 16px; border: .5px solid rgba(0, 0, 0, .14); background: rgba(255, 255, 255, .72); }
+.mp-capsule i { flex: 1; display: flex; align-items: center; justify-content: center; height: 100%; }
+.mp-capsule i + i { border-left: .5px solid rgba(0, 0, 0, .14); height: 18px; }
+
+.mp-body { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+.mp-view { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; }
+.mp-pad { padding: 12px; }
+.mp-grow { flex: 1; min-height: 0; }
+.mp-foot { padding: 12px 16px 28px; background: #ededed; }
+.mp-home { position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: #111; z-index: 900; pointer-events: none; }
+
+/* 任务卡：两台手机上同一份样式，飞的时候才连贯 */
+.task-card { background: #fff; border-radius: 10px; padding: 14px 16px; box-sizing: border-box; width: 366px; }
+.task-card__top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.task-card__title { font-size: 17px; font-weight: 600; }
+.task-card__fee { font-size: 19px; font-weight: 600; color: #fa5151; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.task-card__route { margin-top: 6px; font-size: 14px; color: rgba(0, 0, 0, .55); }
+.task-card__tags { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 3px; background: rgba(7, 193, 96, .1); color: #06ad56; }
+.tag_gray { background: rgba(0, 0, 0, .05); color: rgba(0, 0, 0, .55); }
+.task-card + .task-card { margin-top: 10px; }
+.task-card_new { box-shadow: 0 0 0 2px #07c160 inset; }
+
+.mp-list { padding: 12px; }
+.mp-section { padding: 2px 4px 8px; font-size: 13px; color: rgba(0, 0, 0, .5); }
+.mp-slot { overflow: hidden; }
+
+.mp-lock { color: rgba(0, 0, 0, .4); font-size: 14px; }
+.mp-code { font-weight: 600; color: #06ad56; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+
+/* 底部导航：WeUI 的 tabbar 没有 home 指示条留白，这里补上 */
+.mp .weui-tabbar { flex: none; padding-bottom: 20px; }
+.mp .weui-tabbar__item { padding: 7px 0 2px; }
+.mp .weui-tabbar__icon { width: 26px; height: 26px; display: block; margin: 0 auto; }
+.mp .weui-tabbar__label { font-size: 11px; }
+
+/* 状态页：WeUI 的步骤条在小尺寸下偏松，收紧一点 */
+.mp-status-head { background: #fff; padding: 20px 16px 14px; border-radius: 10px; }
+.mp-status-head h3 { font-size: 21px; font-weight: 600; }
+.mp-status-head p { margin-top: 4px; font-size: 14px; color: rgba(0, 0, 0, .55); }
+
+/* 弹层 */
+.mp-sheet { position: absolute; inset: 0; z-index: 650; }
+.mp .weui-half-screen-dialog { z-index: 500; }
+.mp-toast { position: absolute; left: 50%; top: 42%; width: 136px; margin-left: -68px; padding: 18px 8px; box-sizing: border-box; text-align: center;
+  background: rgba(0, 0, 0, .78); border-radius: 12px; color: #fff; font-size: 15px; z-index: 700; }
+.mp-toast .weui-icon-success-no-circle { color: #fff; font-size: 40px; display: block; margin: 0 auto 6px; }
+
+/* 飞行层 */
+#fly-layer { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+#fly-layer .task-card { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; color: #111; line-height: 1.45; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; font-size: 16px; }
+
+/* 手机宽度：只留一台，去掉外框 */
+.solo .device-iphone-14-pro .device-frame { background: none; border: 0; box-shadow: none; padding: 19px; }
+.solo .device-header, .solo .device-sensors, .solo .device-btns, .solo .device-power, .solo .device-stripe, .solo .device-home { display: none; }
+.solo .phone-slot[hidden] { display: none; }
