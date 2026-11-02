@@ -4,8 +4,8 @@
   function m(h, mi) { return h * 60 + mi; }
   window.PROCESS = {
     no: '03 / 我是怎么做的',
-    title: '我是怎么做的：多窗口协作，实际操作约 2.5 小时',
-    note: '统计方法：取本人在各窗口发消息的时间，两条消息间隔超过 20 到 30 分钟算离开，算出 2.2 到 2.6 小时（统计到 2026-11-02 10:19，之后的修改要再加）。空档已折叠，完整记录见 CLAUDE.md。本人离开时，窗口可能还在跑。',
+    title: '我是怎么做的：多窗口协作，实际操作约 2 到 2.5 小时',
+    note: '统计方法：取本人在各窗口发消息的时间，两条消息间隔超过 10 到 15 分钟算离开，算出约 1.9 到 2.3 小时（统计到 2026-11-02 11:08，之后的修改要再加）。空档已折叠，完整记录见 CLAUDE.md。本人离开时，窗口可能还在跑。',
     day: '洛杉矶时间 · 2026-11-01 到 11-02',
     /* 时间轴只画本人操作的时段；away 是这一段之前离开了多久；label 是轴上的时间 */
     segments: [
@@ -114,6 +114,12 @@
       }
     ],
     footText: '完整记录：',
+    materials: [
+      { label: '全部调研（A 到 H）', url: 'https://github.com/lijiajie-git/campus-errand/tree/main/调研' },
+      { label: '范围清单', url: 'https://github.com/lijiajie-git/campus-errand/blob/main/方案/展示清单.md' },
+      { label: '正式页面代码', url: 'https://github.com/lijiajie-git/campus-errand/tree/main/content' },
+      { label: '前端窗口的三个骨架方向', url: 'https://github.com/lijiajie-git/campus-errand/tree/main/设计预览' }
+    ],
     footLink: 'https://github.com/lijiajie-git/campus-errand/blob/main/CLAUDE.md',
     footLabel: 'CLAUDE.md（这份文件本身也是交付材料）',
     defaultEvent: 'e4'

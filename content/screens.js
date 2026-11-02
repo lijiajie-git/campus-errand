@@ -2,7 +2,7 @@
    data-next：走下一步；data-goto：跳到某一步；data-nav="界面名|JSON参数"：只切这台手机。 */
 (function () {
   var D = window.CONTENT;
-  var IMG = '../素材-脱敏/';
+  var IMG = '素材-脱敏/';
 
   function svg(p, s, sw) { return '<svg width="' + (s || 24) + '" height="' + (s || 24) + '" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.7) + '" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
   /* 服务图标：黑线加一点绿，参考竞品的做法 */

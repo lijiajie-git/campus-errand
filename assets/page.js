@@ -82,7 +82,8 @@ window.PAGE_EXTRAS = function () {
       '<div class="how-d">' + R.details.map(function (d) {
         return '<details><summary><b>' + d.h + '</b><span>' + d.one + '</span></summary><div class="inner">' + (d.list ? plainList(d.list) : '') + (d.table ? table(d.table.head, d.table.rows) : '') + (d.after ? '<p>' + d.after + '</p>' : '') + '</div></details>';
       }).join('') + '</div>' +
-      '<div class="foot">' + R.footText + '<a href="' + R.footLink + '">' + R.footLabel + '</a></div></div>';
+      '<div class="foot">' + R.footText + '<a href="' + R.footLink + '" target="_blank" rel="noopener">' + R.footLabel + '</a>' +
+      '<div class="foot-links">调研和代码都在 GitHub：' + (R.materials || []).map(function (l) { return '<a href="' + l.url + '" target="_blank" rel="noopener">' + l.label + '</a>'; }).join('') + '</div></div></div>';
 
     var lanes = $('#lanes');
     var html = '<div class="lz-axis">' + R.segments.map(function (g, i) { return '<span class="lz-tick" style="left:' + starts[i].toFixed(2) + '%;transform:none">' + g.label + '</span>'; }).join('') + '</div>';

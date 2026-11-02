@@ -458,3 +458,4 @@ html.locked #plan, html.locked #how, html.locked #scope { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .mp .in, .mp .in-late, .view-in, .cb, .mz::after, .mz-box, .shot-scan { animation-duration: .01s !important; animation-delay: 0s !important; }
 }
+.foot-links { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
